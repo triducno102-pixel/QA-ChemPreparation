@@ -38,6 +38,7 @@ foreach ($name in $LabSchema.Keys) {
             $bits = @()
             if ($f.Decimals -ge 0) { $bits += "$($f.Decimals) số lẻ" }
             if (-not [double]::IsNaN($f.Min)) { $bits += "≥ $($f.Min)" }
+            if (-not [double]::IsNaN($f.Max)) { $bits += "≤ $($f.Max)" }
             $vals = $bits -join ', '
         }
         $row = '| `{0}` | {1} | {2} | {3} | {4} | {5} | {6} |' -f $f.Name, (Cell $f.Display), $typeVi[$f.Type],
@@ -131,6 +132,7 @@ Flow luôn kiểm tra ``Unit`` của giao dịch khớp ``Unit`` của đối t�
 | BR-10 | ``Status`` tự động: số dư = 0 → Empty; 0 < số dư < ban đầu → InUse; quá hạn → Expired (job hằng ngày). Chai/dung dịch Expired hoặc Empty vẫn tra cứu và truy xuất được. |
 | BR-11 | Công thức pha (``LabPrepItems``) bất biến sau khi tạo. |
 | BR-12 | Mỗi yêu cầu ghi mang ``RequestId`` (GUID); gửi lại cùng ``RequestId`` trả kết quả cũ, không ghi trùng. |
+| BR-13 | **Cảnh báo sắp hết (cần mua thêm):** với mỗi hoá chất, ``Tổng tồn`` = Σ ``RemainingQty`` của các chai ``Available``/``InUse``/``Quarantine`` (hàng đã nhập nhưng đang chờ kiểm vẫn tính là có hàng, để không mua trùng). ``Mốc 100%`` = ``ParLevelQty`` nếu có, ngược lại ``PeakQty``. ``Ngưỡng`` = ``LowStockPct`` của hoá chất nếu có, ngược lại ``DefaultLowStockPct``. Cảnh báo khi ``Tổng tồn < Mốc 100% × Ngưỡng / 100`` (kể cả khi đã hết sạch). Riêng từng chai đang dùng: tô vàng khi ``RemainingQty / InitialQty × 100 < Ngưỡng``. |
 
 ## 6. Cấu hình mặc định (``LabSettings``)
 

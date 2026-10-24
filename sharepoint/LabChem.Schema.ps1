@@ -22,11 +22,12 @@ function Fld {
         [switch]$Indexed,
         [int]$Decimals = -1,
         [double]$Min = [double]::NaN,
+        [double]$Max = [double]::NaN,
         [string]$Note = ''
     )
     [pscustomobject]@{
         Name = $Name; Display = $Display; Type = $Type; Choices = $Choices; Default = $Default
-        Required = [bool]$Required; Indexed = [bool]$Indexed; Decimals = $Decimals; Min = $Min; Note = $Note
+        Required = [bool]$Required; Indexed = [bool]$Indexed; Decimals = $Decimals; Min = $Min; Max = $Max; Note = $Note
     }
 }
 
@@ -42,7 +43,7 @@ $LabSchema = [ordered]@{
         TitleDisplay = 'Tên hoá chất'
         TitleIndexed = $true
         TitleUnique  = $false
-        ViewFields   = @('LinkTitle', 'CasNumber', 'ChemType', 'Grade', 'BaseUnit', 'MinStockQty', 'IsActive')
+        ViewFields   = @('LinkTitle', 'CasNumber', 'ChemType', 'Grade', 'BaseUnit', 'ParLevelQty', 'LowStockPct', 'IsActive')
         Fields       = @(
             Fld CasNumber       'Số CAS'                    Text    -Indexed
             Fld ChemType        'Loại'                      Choice  -Choices 'Chất gốc', 'Dung môi', 'Chất chuẩn', 'Dung dịch đệm', 'Môi trường', 'Khác' -Default 'Chất gốc'
@@ -50,7 +51,9 @@ $LabSchema = [ordered]@{
             Fld BaseUnit        'Đơn vị gốc'                Choice  -Choices $UnitChoices -Default 'g' -Required -Note 'Mọi số lượng của hoá chất này đều lưu theo đơn vị gốc (g, mL hoặc pcs).'
             Fld HazardClass     'Phân loại nguy hiểm (GHS)' MultiChoice -Choices 'Dễ cháy', 'Ăn mòn', 'Độc cấp tính', 'Oxy hoá', 'Kích ứng', 'Nguy hại sức khoẻ', 'Nguy hại môi trường', 'Khí nén', 'Dễ nổ', 'Không nguy hiểm'
             Fld StorageCondition 'Điều kiện bảo quản'       Choice  -Choices $StorageChoice
-            Fld MinStockQty     'Tồn tối thiểu'             Number  -Decimals 4 -Min 0 -Note 'Theo đơn vị gốc. Tổng RemainingQty các chai Available/InUse thấp hơn ngưỡng này sẽ bị cảnh báo.'
+            Fld ParLevelQty     'Lượng tồn chuẩn'           Number  -Decimals 4 -Min 0 -Note 'Lượng muốn có khi kho đầy đủ (đơn vị gốc). Là mốc 100% để tính % còn lại. Để trống = hệ thống dùng PeakQty.'
+            Fld LowStockPct     'Ngưỡng cảnh báo (%)'       Number  -Decimals 0 -Min 1 -Max 99 -Note 'Cảnh báo cần mua thêm khi tổng tồn nhỏ hơn % này của lượng tồn chuẩn. Để trống = dùng DefaultLowStockPct trong LabSettings.'
+            Fld PeakQty         'Tồn cao nhất đã đạt'       Number  -Decimals 4 -Min 0 -Note 'Hệ thống tự cập nhật (LAB-F01) sau mỗi lần nhập = tổng tồn lớn nhất từng đạt. Dùng làm lượng chuẩn khi ParLevelQty trống; Admin có thể đặt lại.'
             Fld SDSLink         'Link SDS'                  Url
             Fld IsActive        'Đang sử dụng'              Boolean -Default '1'
         )
@@ -238,6 +241,8 @@ $LabSchema = [ordered]@{
 $LabSeedSettings = @(
     @{ Key = 'LabName';                 Value = 'Phòng thí nghiệm';  Desc = 'Tên hiển thị trên tiêu đề app và nhãn.' }
     @{ Key = 'ExpiryWarnDays';          Value = '30';                Desc = 'Cảnh báo hoá chất/dung dịch sắp hết hạn trong N ngày.' }
+    @{ Key = 'DefaultLowStockPct';      Value = '20';                Desc = 'Ngưỡng cảnh báo sắp hết (%) mặc định, dùng cho hoá chất không tự đặt LowStockPct. Chai đang dùng dưới % này (so với lượng ban đầu) cũng được tô vàng.' }
+    @{ Key = 'LabelBarcode';            Value = 'Code39';            Desc = 'Mã vạch tuyến tính in thêm trên nhãn để máy quét 1D (laser) đọc được: Code39 hoặc None. QR luôn được in.' }
     @{ Key = 'RequireIncomingRelease';  Value = 'false';             Desc = 'true: hoá chất mới nhập ở trạng thái Quarantine, Reviewer/Admin phải Release mới dùng được.' }
     @{ Key = 'EnforcePrepExpiryLimit';  Value = 'true';              Desc = 'true: hạn dùng dung dịch pha không được vượt hạn dùng sớm nhất của thành phần.' }
     @{ Key = 'MaxBottlesPerReceipt';    Value = '20';                Desc = 'Số chai tối đa tạo trong một lần đăng ký nhập.' }

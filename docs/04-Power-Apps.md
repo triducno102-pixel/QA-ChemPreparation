@@ -11,7 +11,7 @@ Giao diện tham chiếu: [mockup/index.html](../mockup/index.html). Mở bằng
 | Layout | Tablet, 1366 × 768 | Dùng trên PC lab và máy tính bảng |
 | Scale to fit / Lock aspect ratio / Lock orientation | **Tắt** cả ba | Để bố cục co giãn theo Container |
 | Data row limit | 2000 | Giới hạn tối đa; mọi truy vấn phải delegable |
-| Controls | **Modern controls** (Fluent) cho Button, Text input, Combo box, Date picker; **Classic** cho Gallery, Barcode scanner | Modern có giao diện hiện đại và hỗ trợ accessibility tốt hơn; barcode scanner chỉ có bản classic |
+| Controls | **Modern controls** (Fluent) cho Button, Text input, Combo box, Date picker; **Classic** cho Gallery | Modern có giao diện hiện đại và hỗ trợ accessibility tốt hơn. Control quét camera *Barcode reader* chỉ dùng cho điện thoại/tablet (mục 4.2) |
 | Named formulas, Formula-level error management | Bật | Dùng cho `App.Formulas` và `IfError` |
 | Data sources | 10 list `Lab*` (SharePoint) + flow `LAB-F01…F04` | `LabAudit` chỉ cần khi có màn Nhật ký |
 | Sharing | Chia sẻ cho **nhóm bảo mật** (không phải "Everyone"), quyền *User* | Xem [05](05-Bao-mat-va-Kiem-thu.md) |
@@ -47,6 +47,8 @@ fxIsPhone   = App.Width < 700;
 fxIsCompact = App.Width < 1100;
 
 cfgWarnDays = With({v: IfError(Value(LookUp(LabSettings, Title = "ExpiryWarnDays").Value), 30)}, If(v > 0, v, 30));
+cfgLowPct   = With({v: IfError(Value(LookUp(LabSettings, Title = "DefaultLowStockPct").Value), 20)}, If(v > 0, v, 20));   // ngưỡng cảnh báo sắp hết mặc định (%)
+cfgLabelBarcode = Coalesce(LookUp(LabSettings, Title = "LabelBarcode").Value, "Code39");
 cfgQRBase   = LookUp(LabSettings, Title = "QRBaseUrl").Value;
 cfgQRMode   = Coalesce(LookUp(LabSettings, Title = "QRMode").Value, "CodeOnly");
 cfgAppLink  = LookUp(LabSettings, Title = "AppLink").Value;
@@ -114,7 +116,7 @@ Set(varBusy, false);
 
 Mục đích: nhìn nhanh tình trạng phòng lab và đi tới việc cần làm.
 
-- **4 tile KPI:** Chai đang quản lý · Sắp hết hạn (≤ `cfgWarnDays`) · Đã quá hạn còn tồn · Dưới tồn tối thiểu. Bấm vào tile mở `scrInventory` với bộ lọc tương ứng.
+- **4 tile KPI:** Chai đang quản lý · Sắp hết hạn (≤ `cfgWarnDays`) · Đã quá hạn còn tồn · **Cần mua thêm** (dưới ngưỡng %). Bấm vào tile mở `scrInventory` với bộ lọc tương ứng.
 - **Lối tắt:** Quét mã · Nhập hoá chất · Pha chế · Ghi nhận sử dụng.
 - **Danh sách cảnh báo** và **hoạt động gần đây**.
 
@@ -123,20 +125,30 @@ Mục đích: nhìn nhanh tình trạng phòng lab và đi tới việc cần l�
 Concurrent(
     ClearCollect(colCatalog,   Filter(LabCatalog,   IsActive = true)),
     ClearCollect(colLocations, Filter(LabLocations, IsActive = true)),
-    ClearCollect(colActive,    Filter(LabLots, Status.Value = "Available" || Status.Value = "InUse"))
+    ClearCollect(colActive,    Filter(LabLots, Status.Value = "Available" || Status.Value = "InUse" || Status.Value = "Quarantine"))   // gồm hàng chờ kiểm: vẫn tính là có hàng
 );
+// Mỗi hoá chất đang dùng trong danh mục -> tổng tồn, mốc 100%, ngưỡng %, cờ cần mua thêm (BR-13).
+// Dựng từ danh mục (không dựng từ danh sách chai) để hoá chất đã hết sạch vẫn xuất hiện với Total = 0.
 ClearCollect(
     colStock,
     ForAll(
-        GroupBy(colActive, "CatalogID", "Rows") As g,
-        {
-            CatalogID: g.CatalogID,
-            Name:      First(g.Rows).ChemName,
-            Unit:      First(g.Rows).Unit.Value,
-            Bottles:   CountRows(g.Rows),
-            Total:     Sum(g.Rows, RemainingQty),
-            MinQty:    Coalesce(LookUp(colCatalog, ID = g.CatalogID).MinStockQty, 0)
-        }
+        colCatalog As cat,
+        With(
+            {rows: Filter(colActive, CatalogID = cat.ID)},
+            With(
+                {
+                    total: Sum(rows, RemainingQty),
+                    ref:   If(cat.ParLevelQty > 0, cat.ParLevelQty, Coalesce(cat.PeakQty, 0)),
+                    pct:   If(cat.LowStockPct > 0, cat.LowStockPct, cfgLowPct)
+                },
+                {
+                    CatalogID: cat.ID, Name: cat.Title, Unit: cat.BaseUnit.Value,
+                    Bottles: CountRows(rows), Total: total, Ref: ref, Pct: pct,
+                    PctOfRef: If(ref > 0, Round(total / ref * 100, 0), Blank()),
+                    Low: ref > 0 && total < ref * pct / 100
+                }
+            )
+        )
     )
 );
 // Mở thẳng một mã nếu app được bật bằng QR dạng DeepLink
@@ -149,7 +161,7 @@ If(!IsBlank(varDeepLink),
 kpiActive   = CountRows(colActive)
 kpiExpiring = CountRows(Filter(colActive, ExpiryDate >= Today() && ExpiryDate <= DateAdd(Today(), cfgWarnDays, TimeUnit.Days)))
 kpiExpired  = CountRows(Filter(colActive, ExpiryDate < Today()))     // đã quá hạn nhưng job S01 chưa đánh dấu
-kpiLow      = CountRows(Filter(colStock, MinQty > 0 && Total < MinQty))
+kpiLow      = CountRows(Filter(colStock, Low))      // Cần mua thêm
 
 // Hoạt động gần đây (Items của Gallery)
 FirstN(Sort(LabLedger, Created, SortOrder.Descending), 8)
@@ -159,37 +171,66 @@ FirstN(Sort(LabLedger, Created, SortOrder.Descending), 8)
 
 ### 4.2 `scrScan` — Quét mã
 
-Hai đường vào, cùng một bộ giải mã:
+**Máy quét Zebra cầm tay (loại "đưa vào kêu tít" như ở siêu thị) không có camera và không gửi hình ảnh vào app.** Nó hoạt động như **bàn phím**: mỗi lần quét, máy "gõ" nội dung mã vào ô đang được chọn (focus), thường kèm phím Enter. Với Power Apps, đó chỉ là một ô nhập văn bản — nên **không dùng control camera** cho trường hợp này.
 
-1. **Camera:** control *Barcode scanner* (`BarcodeType = Auto`, hỗ trợ QR / Code128).
-2. **Súng quét USB/Bluetooth** (chế độ bàn phím, hậu tố Enter): ô `txtScan` luôn giữ focus.
+| Cách quét | Thiết bị | Control trong app | Ghi chú |
+|---|---|---|---|
+| **Máy quét cầm tay (cách chính)** | Zebra USB hoặc Bluetooth nối với PC/laptop/tablet | Text input + Timer | Chạy cả khi mở app bằng trình duyệt; không cần quyền camera; không có khung hình |
+| Máy Zebra Android (dòng TC/MC, có đầu quét tích hợp) | Nút quét trên thân máy | Text input + cấu hình DataWedge | Xem "Máy Zebra Android" bên dưới |
+| Camera điện thoại / tablet (phụ) | Android, iOS, ứng dụng Power Apps for Windows | **Barcode reader** | **Không hoạt động trong trình duyệt** (theo tài liệu Microsoft). Là nút bấm mở màn hình quét của hệ điều hành |
 
 ```powerfx
+// ---- Máy quét cầm tay ----
+// txtScan : Text input, giữ focus khi vào màn hình, gợi ý "Sẵn sàng quét…"
+// tmrScan : Timer (Duration = 300, Repeat = true, AutoStart = true, Visible = false)
+
 // scrScan.OnVisible
 Reset(txtScan); SetFocus(txtScan);
-If(!IsBlank(varScanRaw), Select(btnResolve));
+If(!IsBlank(varScanRaw), Select(btnResolve));        // mã đến từ QR DeepLink hoặc camera
 
-// BarcodeScanner1.OnScan
-Set(varScanRaw, BarcodeScanner1.Value); Select(btnResolve);
+// tmrScan.OnTimerEnd — cứ 0,3 giây xem ô nhập; thấy một mã hợp lệ là xử lý ngay
+If(
+    !IsBlank(Match(txtScan.Value, "(IN|PC)-\d{2}-\d{5}", MatchOptions.IgnoreCase).FullMatch),
+    Set(varScanRaw, txtScan.Value); Select(btnResolve)
+);
 
-// txtScan.OnChange   (súng quét gõ mã rồi Enter)
-If(!IsBlank(Self.Value), Set(varScanRaw, Self.Value); Select(btnResolve));
-
-// btnResolve.OnSelect
+// btnResolve.OnSelect — hiểu "PC-26-00017", "pc-26-00017" + ký tự xuống dòng, hoặc "https://…&code=PC-26-00017"
 With(
-    {raw: Trim(Coalesce(varScanRaw, ""))},
+    {raw: Coalesce(varScanRaw, txtScan.Value)},
     With(
-        // hiểu cả "PC-26-00017" lẫn "https://...&code=PC-26-00017"
-        {code: Upper(Trim(If("code=" in Lower(raw), First(Split(Last(Split(Lower(raw), "code=")).Value, "&")).Value, raw)))},
+        {m: Match(raw, "(IN|PC)-\d{2}-\d{5}", MatchOptions.IgnoreCase)},
         If(
-            IsMatch(code, "^(IN|PC)-\d{2}-\d{5}$"),
-            Navigate(scrDetail, ScreenTransition.None, {pCode: code}),
-            Notify("Mã không hợp lệ: " & Left(code, 40), NotificationType.Warning)
+            !IsBlank(m.FullMatch),
+            Navigate(scrDetail, ScreenTransition.None, {pCode: Upper(m.FullMatch)}),
+            Notify("Không nhận ra mã: " & Left(raw, 40), NotificationType.Warning)
         )
     )
 );
 Set(varScanRaw, Blank()); Reset(txtScan); SetFocus(txtScan);
+
+// ---- Camera (chỉ hiện trên màn hình nhỏ) ----
+// BarcodeReader1.Visible = fxIsCompact
+// BarcodeReader1.OnScan
+Set(varScanRaw, First(BarcodeReader1.Barcodes).Value); Select(btnResolve);
 ```
+
+**Vì sao dùng Timer thay vì `OnChange`:** máy quét gõ cả mã trong chưa đến một giây. Người dùng cộng đồng Power Apps từng báo `OnChange` của ô nhập cho kết quả không ổn định khi nhập bằng máy quét USB. Timer đọc thẳng nội dung ô nhập và bắt mẫu `IN-yy-nnnnn`/`PC-yy-nnnnn`, nên đúng cả khi máy có hay không có phím Enter. Nút **Tìm** vẫn có cho người gõ tay.
+
+**Cấu hình máy Zebra (làm một lần, theo sách "Product Reference Guide" đúng model):**
+
+1. **Giao tiếp:** USB HID Keyboard (quét mã cấu hình tương ứng). Máy Bluetooth: ghép đôi ở chế độ HID.
+2. **Hậu tố:** bật "Add Enter Key" (nên có cho các ô nhập khác trong app, dù màn Quét không cần).
+3. **Loại mã:** bật Code 39 / Code 128 (thường bật sẵn). **QR chỉ đọc được bởi máy 2D (imager)** — xem bảng bên dưới.
+4. **Windows:** để bàn phím tiếng Anh (tắt Unikey/Telex) khi quét, tránh bộ gõ biến đổi ký tự.
+
+| Model Zebra | Loại | Đọc được |
+|---|---|---|
+| LS2208 và các máy laser tương tự | 1D (laser) | Mã vạch tuyến tính (Code 39/128…), **không đọc QR** |
+| DS2208, DS2278 và các máy imager | 2D | Mã vạch tuyến tính **và** QR |
+
+→ Vì chưa biết model, **nhãn in cả QR lẫn mã vạch Code 39** (mục 4.9). Máy 1D đọc mã vạch, máy 2D và điện thoại đọc QR hoặc mã vạch.
+
+**Máy Zebra Android (DataWedge):** tạo profile gắn với ứng dụng Power Apps, bật *Keystroke output*, đặt hậu tố Enter. Một người dùng cộng đồng báo đã dùng cấu hình gửi phím Tab trước/sau mã kèm ô nhập ẩn để bàn phím ảo không bật lên — cách này em chưa tự kiểm chứng.
 
 Dưới ô quét hiển thị **10 mã vừa quét** (`colRecentScans`) để mở lại nhanh.
 
@@ -198,7 +239,7 @@ Dưới ô quét hiển thị **10 mã vừa quét** (`colRecentScans`) để m�
 - Hai tab: **Hoá chất đầu vào** (`LabLots`) và **Dung dịch pha** (`LabPreps`).
 - Ô tìm (mã, tên, số lô), chip lọc theo **Trạng thái**, **Sắp hết hạn**, **Vị trí**.
 - Mỗi dòng: mã (in đậm) · tên · số lô/nồng độ · vị trí · hạn dùng (màu theo quy tắc) · **thanh còn lại** (`còn/ban đầu`, kèm số "250 / 500 mL") · badge trạng thái.
-- Chế độ **Gộp theo hoá chất** (từ `colStock`): tổng lượng còn của mọi chai, số chai, cảnh báo dưới tồn tối thiểu.
+- Chế độ **Gộp theo hoá chất** (từ `colStock`): tổng lượng còn của mọi chai, số chai, **% còn lại so với lượng tồn chuẩn** (thanh tiến độ) và nhãn **Cần mua thêm** khi dưới ngưỡng % (BR-13).
 
 ```powerfx
 // Gallery hoá chất đầu vào — .Items  (phải không có cảnh báo delegation)
@@ -216,6 +257,20 @@ Parent.Width * If(ThisItem.InitialQty > 0, Min(1, ThisItem.RemainingQty / ThisIt
 
 // Nhãn trạng thái
 LookUp(tblStatus, Key = ThisItem.Status.Value).Label
+
+// Thanh còn lại của từng chai: vàng khi dưới ngưỡng % của hoá chất đó (mặc định cfgLowPct)
+If(
+    ThisItem.InitialQty > 0 && ThisItem.RemainingQty / ThisItem.InitialQty * 100 <
+        With({c: LookUp(colCatalog, ID = ThisItem.CatalogID)}, If(c.LowStockPct > 0, c.LowStockPct, cfgLowPct)),
+    clrWarning, clrPrimary
+)
+
+// Tab "Gộp theo hoá chất" — Items của Gallery, hoá chất cần mua đứng đầu
+SortByColumns(colStock, "Low", SortOrder.Descending, "Name", SortOrder.Ascending)
+
+// Thanh % so với lượng chuẩn — Rectangle.Width và màu
+Parent.Width * Min(1, Coalesce(ThisItem.PctOfRef, 100) / 100)
+If(ThisItem.Low, clrDanger, clrPrimary)
 ```
 
 Bấm một dòng: `Navigate(scrDetail, ScreenTransition.None, {pCode: ThisItem.Title})`.
@@ -480,7 +535,7 @@ Nút **Xuất báo cáo truy xuất** (PDF/Excel) là giai đoạn 2.
 
 ### 4.9 `scrLabel` — In nhãn
 
-Nhận `pCodes` (bảng `{Code}`). Mỗi nhãn: **QR + mã (chữ lớn, đọc được bằng mắt) + tên + số lô/nồng độ + hạn dùng + vị trí**. Kích thước nhãn đặt bằng biến để đổi theo máy in.
+Nhận `pCodes` (bảng `{Code}`). Mỗi nhãn: **QR + mã vạch Code 39 + mã (chữ lớn, đọc được bằng mắt) + tên + số lô/nồng độ + hạn dùng + vị trí**. Mã vạch Code 39 để máy quét 1D (laser) đọc được; có thể tắt bằng `LabelBarcode = None`. Kích thước nhãn đặt bằng biến để đổi theo máy in.
 
 ```powerfx
 // scrLabel.OnVisible — chuẩn hoá dữ liệu nhãn
@@ -504,13 +559,71 @@ ClearCollect(
 Print()
 ```
 
+**Mã vạch Code 39 tạo ngay trong app (không gọi dịch vụ ngoài).** Thêm bảng ký tự vào `App.Formulas` (đủ cho các ký tự có trong mã `IN-yy-nnnnn` / `PC-yy-nnnnn`; mỗi ký tự là 9 phần tử vạch/khoảng, `w` = rộng, `n` = hẹp):
+
+```powerfx
+tblC39 = Table(
+    {Ch: "0", P: "nnnwwnwnn"}, {Ch: "1", P: "wnnwnnnnw"}, {Ch: "2", P: "nnwwnnnnw"}, {Ch: "3", P: "wnwwnnnnn"},
+    {Ch: "4", P: "nnnwwnnnw"}, {Ch: "5", P: "wnnwwnnnn"}, {Ch: "6", P: "nnwwwnnnn"}, {Ch: "7", P: "nnnwnnwnw"},
+    {Ch: "8", P: "wnnwnnwnn"}, {Ch: "9", P: "nnwwnnwnn"}, {Ch: "C", P: "wnwnnwnnn"}, {Ch: "I", P: "nnwnnwwnn"},
+    {Ch: "N", P: "nnnnwnnww"}, {Ch: "P", P: "nnwnwnnwn"}, {Ch: "-", P: "nwnnnnwnw"}, {Ch: "*", P: "nwnnwnwnn"}
+);
+```
+
+```powerfx
+// scrLabel.OnVisible — sau ClearCollect(colLabels, …) ở trên
+ClearCollect(
+    colLabelBars,
+    ForAll(
+        colLabels As l,
+        With(
+            {
+                // mỗi ký tự (kể cả * đầu/cuối) = 9 phần tử + 1 khoảng cách; bar = vạch, w = độ rộng (hẹp 2, rộng 5, khoảng cách 2)
+                els: ForAll(
+                    Sequence((Len(l.Code) + 2) * 10) As n,
+                    With(
+                        {ch: Mid("*" & l.Code & "*", RoundUp(n.Value / 10, 0), 1), pos: Mod(n.Value - 1, 10) + 1},
+                        {
+                            bar: Mod(pos, 2) = 1,
+                            w:   If(pos = 10, 2, If(Mid(LookUp(tblC39, Ch = ch).P, pos, 1) = "w", 5, 2))
+                        }
+                    )
+                )
+            },
+            With(
+                {
+                    placed: ForAll(
+                        Sequence(CountRows(els)) As i,
+                        {x: Sum(FirstN(els, i.Value - 1), w), w: Index(els, i.Value).w, bar: Index(els, i.Value).bar}
+                    )
+                },
+                {
+                    Code: l.Code,
+                    Img: "data:image/svg+xml;utf8," & EncodeUrl(
+                        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-20 0 " & (Sum(els, w) + 40) & " 40' preserveAspectRatio='none'>" &
+                        "<rect x='-20' width='" & (Sum(els, w) + 40) & "' height='40' fill='white'/>" &
+                        Concat(Filter(placed, bar), "<rect x='" & x & "' width='" & w & "' height='40' fill='black'/>") &
+                        "</svg>")
+                }
+            )
+        )
+    )
+);
+
+// Image.Image của ô mã vạch trên nhãn;  Visible = cfgLabelBarcode = "Code39"
+LookUp(colLabelBars, Code = ThisItem.Code).Img
+```
+
+- Thuật toán mã hoá (bảng ký tự, độ rộng, khoảng cách) đã được **kiểm chứng bằng bộ giải mã ZXing** cho `IN-26-00042`, `PC-26-00017` và toàn bộ ký tự `0-9 A-Z - .`; riêng công thức Power Fx ở trên chưa chạy trong Studio.
+- Kích thước: khoảng 417 đơn vị rộng (gồm 2 × 20 vùng trống hai bên); nếu vạch hẹp = 0,2 mm thì ảnh rộng ≈ 41,7 mm, cao 8 mm. Với nhãn 50 × 30 mm đặt QR ở trên, mã vạch nằm dưới. Cần thử đọc bằng đúng máy Zebra và nhãn thật.
+
 - Giai đoạn đầu: `Print()` trên trình duyệt desktop, thiết lập kích thước giấy = kích thước nhãn trong hộp thoại in (máy in nhãn Zebra/Brother/TSC cài driver Windows). Hỏi lại loại máy in và kích thước nhãn để chốt template.
 - Trên thiết bị di động `Print()` bị hạn chế → dùng desktop để in; điện thoại chỉ dùng để quét.
 - Giai đoạn 2: flow sinh PDF nhãn đúng kích thước, in tự động.
 
 ### 4.10 `scrAdmin` — Quản trị (chỉ `fxIsAdmin`)
 
-Tab: **Danh mục hoá chất · Vị trí · Cấu hình · Vai trò · Nhật ký**. CRUD danh mục/vị trí ghi trực tiếp bằng `Patch` (Admin có quyền *Contribute* trên các list này); **không có nút xoá** — chỉ "Ngừng sử dụng" (`IsActive = false`). Nhật ký là Gallery đọc `LabAudit`, lọc theo thời gian, đối tượng, kết quả.
+Tab: **Danh mục hoá chất · Vị trí · Cấu hình · Vai trò · Nhật ký**. CRUD danh mục/vị trí ghi trực tiếp bằng `Patch` (Admin có quyền *Contribute* trên các list này); **không có nút xoá** — chỉ "Ngừng sử dụng" (`IsActive = false`). Form hoá chất có ô **Lượng tồn chuẩn** và **Ngưỡng cảnh báo (%)** (placeholder "mặc định 20%"); `PeakQty` chỉ hiển thị, kèm nút "Đặt lại về tồn hiện tại" cho Admin. Nhật ký là Gallery đọc `LabAudit`, lọc theo thời gian, đối tượng, kết quả.
 
 ```powerfx
 // Thêm hoá chất vào danh mục
@@ -518,7 +631,9 @@ Patch(LabCatalog, Defaults(LabCatalog), {
     Title: Trim(txtCatName.Value), CasNumber: Trim(txtCas.Value),
     ChemType: {Value: ddChemType.Selected.Value}, BaseUnit: {Value: ddBaseUnit.Selected.Value},
     HazardClass: ForAll(cmbHazard.SelectedItems, {Value: Value}),
-    MinStockQty: Value(txtMin.Value), IsActive: true
+    ParLevelQty: If(IsBlank(txtPar.Value), Blank(), Value(txtPar.Value)),   // lượng tồn chuẩn (mốc 100%)
+    LowStockPct: If(IsBlank(txtPct.Value), Blank(), Value(txtPct.Value)),   // để trống = dùng mặc định cfgLowPct
+    IsActive: true
 })
 ```
 
@@ -534,15 +649,16 @@ Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ c�
 - **Lỗi kết nối:** giữ nguyên dữ liệu đã nhập, cho thử lại với cùng `requestId`.
 - Dùng `Notify` cho phản hồi nhẹ; hộp thoại xác nhận riêng cho thao tác không thể hoàn tác (Dispose, Void).
 
-## 6. Quét mã vạch / QR
+## 6. Quét mã vạch / QR — tóm tắt
 
 | Tình huống | Cách làm |
 |---|---|
-| Điện thoại / tablet | Control *Barcode scanner* trong Power Apps mobile. Cần cấp quyền camera cho app. |
-| Máy tính để bàn + súng quét USB/Bluetooth | Súng ở chế độ HID keyboard + hậu tố Enter; ô `txtScan` giữ focus. Đây là cách ổn định nhất trong phòng lab. |
+| **Máy Zebra cầm tay (USB/Bluetooth)** | Máy hoạt động như bàn phím; màn Quét dùng ô nhập + Timer (mục 4.2). Không có camera, không có hình ảnh; chạy được cả trong trình duyệt. |
+| Máy Zebra Android (TC/MC) | DataWedge ở chế độ *Keystroke output* vào ô nhập của app. |
+| Điện thoại / tablet (phụ) | Control **Barcode reader** (Android, iOS, Power Apps for Windows). **Không chạy trong trình duyệt.** Cần cấp quyền camera. |
 | QR chứa link (DeepLink) | Camera điện thoại thường quét → mở app tại `scrScan` với `Param("code")` (cần nhập `AppLink`, đặt `QRMode = DeepLink`). |
-| Tạo ảnh QR | Ảnh lấy từ `cfgQRBase` + dữ liệu. **Mặc định là dịch vụ công cộng chỉ để chạy thử**; trước khi go-live thay bằng PCF tạo QR cục bộ hoặc dịch vụ nội bộ (xem rủi ro R-03 trong [05](05-Bao-mat-va-Kiem-thu.md)). Đổi nguồn chỉ cần sửa `QRBaseUrl`/thay control, không đụng logic. |
-| Mã vạch 1D (Code 128) | Chưa làm ở giai đoạn 1 vì súng quét hiện đại đọc QR được; nếu cần sẽ thêm cùng cơ chế `cfgQRBase`. |
+| Tạo ảnh QR | Ảnh lấy từ `cfgQRBase` + dữ liệu. **Mặc định là dịch vụ công cộng chỉ để chạy thử**; trước khi go-live thay bằng PCF tạo QR cục bộ hoặc dịch vụ nội bộ (xem rủi ro R-03 trong [05](05-Bao-mat-va-Kiem-thu.md)). |
+| Mã vạch tuyến tính (cho máy 1D) | **Code 39 tạo offline trong app** (mục 4.9), không phụ thuộc dịch vụ ngoài. Bật/tắt bằng `LabelBarcode`. |
 
 ## 7. Hiệu năng
 
@@ -559,7 +675,7 @@ Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ c�
 | `cmpNav` | `Items`, `Selected`, `Collapsed` (input) · `OnNavigate` (event) | mọi màn |
 | `cmpStatusBadge` | `Status` (input, enum) | Inventory, Detail, Trace |
 | `cmpKpiTile` | `Title`, `Value`, `Tone`, `OnSelect` | Home |
-| `cmpCodeInput` | `Placeholder` (input) · `OnCode(code)` (event) · chứa Barcode scanner + `txtScan` + nút | Scan, PrepRegister, Usage, Trace |
+| `cmpCodeInput` | `Placeholder` (input) · `OnCode(code)` (event) · chứa `txtScan` + Timer (+ nút camera *Barcode reader* trên màn hình nhỏ) | Scan, PrepRegister, Usage, Trace |
 | `cmpQR` | `Code` (input) | Detail, Label |
 
 ## 9. Trợ năng (accessibility)
@@ -571,9 +687,11 @@ Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ c�
 
 ## 10. Cần xác nhận khi dựng trong Studio
 
-1. Tên enum `BarcodeType` của control *Barcode scanner* trên phiên bản Studio hiện tại.
+1. Control *Barcode reader*: tên thuộc tính (`Barcodes`, `OnScan`), và việc nó không chạy trong trình duyệt (chỉ Android, iOS, Power Apps for Windows).
 2. Tên hiển thị của từng flow sau khi thêm vào app (`'LAB-F01 RegisterIncoming'.Run` có thể được đặt tên khác) và tên các output (`success`, `message`, `codes`).
 3. `JSON()` với giá trị rỗng: schema `Parse JSON` trong flow cho phép `null` ở các trường tuỳ chọn, hoặc app luôn gửi `""`/`0` (công thức trên đã dùng `Coalesce`).
-4. Hành vi `OnChange` của Text input với súng quét (Enter có kích hoạt ngay không); nếu không, thêm xử lý ở `OnSelect`.
+4. Ô nhập (`txtScan.Value`) cập nhật theo từng ký tự máy quét gõ vào để Timer đọc được; Timer đặt trong component có chạy đúng không (nếu không, đặt Timer ở từng màn hình).
 5. `AddColumns`/`As` trong `ForAll` với collection chứa cột Choice của SharePoint.
 6. `Print()` trên trình duyệt đích và máy in nhãn thực tế.
+7. Công thức Code 39 (`Sequence`, `Index`, `Concat`) chạy đúng trong Studio và `Image` hiển thị SVG dạng `data:`; thử quét nhãn in thật bằng máy Zebra.
+8. `colStock` dựng từ `colCatalog` với `Filter(colActive, …)` lồng trong `ForAll` cho kết quả đúng với dữ liệu thật.

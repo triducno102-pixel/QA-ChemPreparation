@@ -63,6 +63,7 @@ function New-FieldXml {
             $extra = ''
             if ($F.Decimals -ge 0)         { $extra += " Decimals=`"$($F.Decimals)`"" }
             if (-not [double]::IsNaN($F.Min)) { $extra += " Min=`"$($F.Min.ToString([cultureinfo]::InvariantCulture))`"" }
+            if (-not [double]::IsNaN($F.Max)) { $extra += " Max=`"$($F.Max.ToString([cultureinfo]::InvariantCulture))`"" }
             return "<Field Type=`"Number`"$extra $common />"
         }
         'Boolean' {

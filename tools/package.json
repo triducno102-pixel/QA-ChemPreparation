@@ -1,0 +1,7 @@
+{
+  "name": "labchem-tools",
+  "private": true,
+  "type": "module",
+  "description": "Công cụ sinh tài liệu cho LabChem",
+  "dependencies": { "marked": "^15.0.0" }
+}

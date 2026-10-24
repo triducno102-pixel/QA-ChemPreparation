@@ -1,0 +1,235 @@
+<section id="tong-quan">
+  <h2><span class="num">1</span>App làm được gì</h2>
+  <p>LabChem thay sổ tay và Excel trong phòng lab bằng một ứng dụng chạy trên <b>Power Apps</b>, dữ liệu nằm trong <b>SharePoint Lists</b>, các thao tác ghi dữ liệu do <b>Power Automate</b> kiểm soát. Năm yêu cầu ban đầu được đáp ứng như sau.</p>
+  <div class="cards">
+    <article class="card"><div class="tag">Yêu cầu 1</div><h3>Đăng ký hoá chất đầu vào</h3><p>Nhập số lô nhà sản xuất, hạn dùng, lượng, vị trí. <b>Mỗi chai nhận một mã riêng</b> kèm QR và mã vạch, in nhãn dán ngay sau khi lưu.</p><p class="screen">Màn hình: Nhập hoá chất</p></article>
+    <article class="card"><div class="tag">Yêu cầu 2</div><h3>Đăng ký pha chế</h3><p>Quét hoặc chọn các thành phần (chai, hoặc một dung dịch pha khác), nhập lượng. App báo lỗi ngay nếu vượt tồn hoặc hết hạn, tự trừ tồn, cấp mã cho dung dịch mới.</p><p class="screen">Màn hình: Pha chế (3 bước)</p></article>
+    <article class="card"><div class="tag">Yêu cầu 3</div><h3>Theo dõi lượng còn lại</h3><p>Thanh còn lại của từng chai, gộp theo hoá chất, lịch sử xuất/nhập. <b>Cảnh báo sắp hết theo %</b> và sắp hết hạn.</p><p class="screen">Màn hình: Trang chủ, Tồn kho, Chi tiết</p></article>
+    <article class="card"><div class="tag">Yêu cầu 4</div><h3>Truy xuất biên bản thử nghiệm</h3><p>Quét mã dung dịch pha → thấy nguồn gốc (chai, số lô, COA) và <b>các biên bản đã dùng dung dịch đó</b>. Quét mã chai → thấy mọi dung dịch và biên bản liên quan.</p><p class="screen">Màn hình: Ghi nhận sử dụng, Truy xuất</p></article>
+    <article class="card"><div class="tag">Yêu cầu 5</div><h3>Quét QR / mã vạch</h3><p>Dùng <b>máy Zebra cầm tay</b> (đưa vào kêu "tít" như ở siêu thị) hoặc camera điện thoại. Xem mục 4.</p><p class="screen">Màn hình: Quét mã, In nhãn</p></article>
+  </div>
+</section>
+
+<section id="giao-dien">
+  <h2><span class="num">2</span>Giao diện mẫu</h2>
+  <p>Đây là ảnh chụp từ bản mockup (<a href="mockup/index.html">mockup/index.html</a> — mở bằng trình duyệt để bấm thử). Bản thật sẽ dựng bằng Power Apps theo cùng bố cục và màu sắc.</p>
+  <div class="shots">
+    <figure><img src="{{img:mockup-home}}" alt="Trang chủ với bốn thẻ chỉ số và danh sách cần chú ý"><figcaption><b>Trang chủ</b> — bốn chỉ số (kể cả "Cần mua thêm"), danh sách cần chú ý, hoạt động gần đây.</figcaption></figure>
+    <figure><img src="{{img:mockup-scan}}" alt="Màn hình quét mã dùng máy Zebra"><figcaption><b>Quét mã</b> — ô nhận mã từ máy Zebra; camera chỉ là phụ.</figcaption></figure>
+    <figure><img src="{{img:mockup-agg}}" alt="Tồn kho gộp theo hoá chất với phần trăm so với lượng tồn chuẩn"><figcaption><b>Tồn kho gộp theo hoá chất</b> — % còn lại so với lượng tồn chuẩn, nhãn "Cần mua thêm".</figcaption></figure>
+    <figure><img src="{{img:mockup-lot}}" alt="Đăng ký hoá chất đầu vào kèm nhãn có QR và mã vạch"><figcaption><b>Nhập hoá chất</b> — nhãn dán lên chai có QR, mã vạch và mã đọc được bằng mắt.</figcaption></figure>
+    <figure><img src="{{img:mockup-trace}}" alt="Truy xuất từ mã dung dịch pha đến nguồn gốc và biên bản"><figcaption><b>Truy xuất</b> — cây nguồn gốc và danh sách biên bản thử nghiệm.</figcaption></figure>
+  </div>
+</section>
+
+<section id="quy-trinh">
+  <h2><span class="num">3</span>Một ngày làm việc với app</h2>
+  <div class="lanes">
+    <div class="lane"><h3>Nhập hoá chất mới</h3><ol class="steps"><li>Chọn hoá chất trong danh mục</li><li>Nhập số lô, hạn dùng, lượng mỗi chai, <b>số chai</b>, vị trí</li><li>Bấm Lưu: hệ thống cấp mã cho từng chai</li><li>In nhãn, dán lên chai</li></ol></div>
+    <div class="lane"><h3>Pha dung dịch</h3><ol class="steps"><li>Quét hoặc chọn từng thành phần</li><li>Nhập lượng; lỗi (vượt tồn, hết hạn) hiện ngay tại dòng</li><li>Xác nhận công thức, hạn dùng của dung dịch</li><li>Lưu: tự trừ tồn, cấp mã <span class="mono">PC-…</span>, in nhãn</li><li>Người thứ hai duyệt (nếu bật)</li></ol></div>
+    <div class="lane"><h3>Làm thử nghiệm</h3><ol class="steps"><li>Mở "Ghi nhận sử dụng"</li><li>Nhập số biên bản (và link nếu có)</li><li>Quét các dung dịch/chai đã dùng, nhập lượng</li><li>Lưu: tự trừ tồn và gắn vào biên bản</li></ol></div>
+    <div class="lane"><h3>Truy xuất</h3><ol class="steps"><li>Quét mã dung dịch hoặc chai</li><li>Xem nguồn gốc (tối đa 3 cấp pha)</li><li>Xem danh sách biên bản đã dùng, mở từng biên bản</li></ol></div>
+  </div>
+</section>
+
+<section id="zebra">
+  <h2><span class="num">4</span>Quét mã bằng máy Zebra</h2>
+  <div class="callout key"><b>Máy Zebra cầm tay kiểu siêu thị không có camera và không gửi hình ảnh vào app.</b> Nó hoạt động như một <b>bàn phím</b>: mỗi lần quét, máy "gõ" nội dung mã vào ô đang được chọn trên màn hình. Với Power Apps, đó chỉ là một ô nhập văn bản. Vì vậy phần Quét <b>không dùng control camera</b> cho máy Zebra.</div>
+
+  <div class="flow" aria-label="Luồng quét bằng máy Zebra">
+    <div class="node">Máy Zebra<small>đọc mã, kêu "tít"</small></div><div class="arrow">→</div>
+    <div class="node">Gõ vào ô nhập<small>như bàn phím, qua USB/Bluetooth</small></div><div class="arrow">→</div>
+    <div class="node">App nhận mã<small>tự kiểm tra mỗi 0,3 giây</small></div><div class="arrow">→</div>
+    <div class="node">Mở chi tiết<small>không cần bấm thêm</small></div>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Cách quét</th><th>Thiết bị</th><th>Trong app</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td><b>Máy cầm tay (cách chính)</b></td><td>Zebra USB hoặc Bluetooth nối PC / laptop / tablet</td><td>Ô nhập văn bản + bộ hẹn giờ</td><td>Chạy cả khi mở app bằng trình duyệt. Không cần quyền camera.</td></tr>
+      <tr><td>Máy Zebra Android</td><td>Dòng TC/MC có đầu quét tích hợp, bóp cò trên thân máy</td><td>Ô nhập + cấu hình DataWedge</td><td>Cách này em chưa tự kiểm chứng.</td></tr>
+      <tr><td>Camera (phụ)</td><td>Điện thoại, tablet, hoặc Power Apps for Windows</td><td>Control <i>Barcode reader</i></td><td><b>Không chạy trong trình duyệt</b> (theo tài liệu Microsoft).</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Cấu hình máy Zebra (làm một lần)</h3>
+  <ol class="plain">
+    <li><b>Giao tiếp:</b> chọn USB HID Keyboard bằng cách quét mã cấu hình trong sách hướng dẫn (Product Reference Guide) của đúng model. Máy Bluetooth thì ghép đôi ở chế độ HID.</li>
+    <li><b>Hậu tố:</b> bật "Add Enter Key" (không bắt buộc cho màn Quét nhưng có ích cho các ô nhập khác).</li>
+    <li><b>Loại mã:</b> bật Code 39 / Code 128 (thường bật sẵn).</li>
+    <li><b>Máy tính:</b> để bàn phím tiếng Anh (tắt Unikey/Telex) khi quét để mã không bị biến đổi.</li>
+  </ol>
+
+  <div class="callout warn"><b>Cần biết model máy.</b> Máy Zebra laser kiểu cũ (ví dụ <b>LS2208</b>) là loại <b>1D</b>: chỉ đọc mã vạch tuyến tính, <b>không đọc được QR</b>. Máy imager (ví dụ <b>DS2208</b>) là loại <b>2D</b>: đọc cả hai. Vì chưa biết máy của anh là loại nào, <b>nhãn in cả QR lẫn mã vạch Code 39</b> — máy nào cũng đọc được một trong hai.</div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Loại máy</th><th>Ví dụ</th><th>Đọc được</th></tr></thead>
+    <tbody>
+      <tr><td>1D (laser)</td><td>LS2208</td><td>Mã vạch Code 39 / Code 128. <b>Không đọc QR.</b></td></tr>
+      <tr><td>2D (imager)</td><td>DS2208, DS2278</td><td>Mã vạch và QR</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Mã vạch Code 39 được tạo ngay trong app, không gọi dịch vụ bên ngoài. Thuật toán đã được kiểm chứng bằng một bộ giải mã độc lập (ZXing) cho các mã <span class="mono">IN-26-00042</span>, <span class="mono">PC-26-00017</span> và toàn bộ ký tự 0-9, A-Z, dấu gạch ngang. Còn phải thử quét nhãn in thật bằng đúng máy của anh.</p>
+</section>
+
+<section id="canh-bao">
+  <h2><span class="num">5</span>Cảnh báo sắp hết theo %</h2>
+  <p>App cảnh báo "cần chuẩn bị mua thêm" khi tổng lượng còn lại của một hoá chất xuống dưới một tỷ lệ phần trăm. <b>Mặc định 20% cho mọi hoá chất; mỗi hoá chất có thể đặt riêng.</b></p>
+  <div class="cards three">
+    <article class="card"><div class="tag">Con số 1</div><h3>Tổng tồn</h3><p>Cộng lượng còn lại của mọi chai đang có (sẵn sàng, đang dùng, đang chờ kiểm).</p></article>
+    <article class="card"><div class="tag">Con số 2</div><h3>Lượng tồn chuẩn = 100%</h3><p>Lượng muốn có khi kho đầy đủ. Admin đặt cho từng hoá chất. <b>Chưa đặt thì hệ thống tự lấy "tồn cao nhất từng đạt".</b></p></article>
+    <article class="card"><div class="tag">Con số 3</div><h3>Ngưỡng %</h3><p>Mặc định <b>20%</b> (cài một lần cho cả phòng lab). Hoá chất nào cần khác thì đặt riêng.</p></article>
+  </div>
+  <div class="callout key"><b>Quy tắc:</b> cảnh báo khi <b>Tổng tồn &lt; Lượng tồn chuẩn × Ngưỡng %</b>. Hết sạch cũng tính là cảnh báo.</div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Ví dụ</th><th>Tồn chuẩn</th><th>Ngưỡng</th><th>Mốc cảnh báo</th><th>Đang còn</th><th>Kết quả</th></tr></thead>
+    <tbody>
+      <tr><td>Methanol HPLC</td><td>20.000 mL</td><td>20% (mặc định)</td><td>4.000 mL</td><td>3.200 mL (16%)</td><td><span class="pill red">Cần mua thêm</span></td></tr>
+      <tr><td>Acid clohydric 37%</td><td>2.000 mL</td><td>25% (đặt riêng)</td><td>500 mL</td><td>417 mL (21%)</td><td><span class="pill red">Cần mua thêm</span></td></tr>
+      <tr><td>Natri hydroxit AR</td><td>1.000 g</td><td>20% (mặc định)</td><td>200 g</td><td>412,5 g (41%)</td><td><span class="pill green">Đủ</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Cảnh báo hiện ở đâu</h3>
+  <ul>
+    <li>Thẻ <b>"Cần mua thêm"</b> trên Trang chủ và tab <b>"Gộp theo hoá chất"</b> (thanh % so với tồn chuẩn).</li>
+    <li><b>Email hằng ngày lúc 07:00</b> gồm ba bảng: sắp hết hạn, cần mua thêm, chai đang dùng sắp hết.</li>
+    <li>Từng chai đang dùng được <b>tô vàng</b> khi còn dưới ngưỡng % so với lượng ban đầu của chính chai đó (để biết chai sắp cạn dù trong kho còn chai khác).</li>
+  </ul>
+  <p class="muted">Cài đặt: Quản trị → Danh mục hoá chất (ô "Lượng tồn chuẩn" và "Ngưỡng cảnh báo (%)"), Quản trị → Cấu hình (ngưỡng mặc định).</p>
+  <div class="callout ask"><b>Em cần anh xác nhận cách hiểu này:</b> % tính so với <i>lượng tồn chuẩn của từng hoá chất</i> (chứ không phải so với từng chai hay một số lượng tuyệt đối) có đúng ý anh không? Nếu anh muốn cách khác, em đổi được.</div>
+</section>
+
+<section id="bien-ban">
+  <h2><span class="num">6</span>Biên bản thử nghiệm là gì</h2>
+  <div class="callout key"><b>Biên bản thử nghiệm</b> (còn gọi báo cáo hoặc phiếu kết quả thử nghiệm, tiếng Anh <i>test report</i>) là tài liệu ghi lại <b>một lần thử nghiệm trên một mẫu</b>: mẫu nào, thử chỉ tiêu gì, theo phương pháp nào, ngày nào, ai làm, <b>dùng thiết bị và hoá chất/dung dịch nào</b>, kết quả ra sao, ai duyệt.</div>
+  <p>Trong app, mỗi biên bản chỉ cần <b>số biên bản</b> (và đường link tới file nếu có). App không tạo biên bản; nó chỉ nối biên bản với các hoá chất đã dùng.</p>
+  <h3>Vì sao phải nối biên bản với hoá chất</h3>
+  <ul>
+    <li><b>Khi hoá chất có vấn đề</b> (pha sai, nhà cung cấp thu hồi một lô, dùng quá hạn): tìm ra ngay <b>mọi biên bản đã dùng nó</b> để đánh giá ảnh hưởng đến kết quả đã phát hành.</li>
+    <li><b>Khi rà soát một biên bản</b>: chứng minh được hoá chất dùng trong đó còn hạn, được pha và duyệt đúng.</li>
+  </ul>
+  <p class="muted">Phòng lab theo ISO/IEC 17025 thường cần chứng minh được điều này.</p>
+  <div class="callout"><b>Không nhầm với COA.</b> COA (<i>Certificate of Analysis</i>) là giấy chứng nhận chất lượng của <b>nhà cung cấp</b> đi kèm <b>chai hoá chất</b>. App lưu link COA ở từng chai; còn biên bản thử nghiệm là hồ sơ của chính phòng lab.</div>
+  <div class="callout ask"><b>Em cần anh cho biết:</b> trong phòng lab của anh tài liệu này gọi là gì (biên bản, báo cáo, phiếu kết quả…) và <b>hiện đang lưu ở đâu</b> (thư viện SharePoint, hệ thống khác, hay bản giấy). Câu trả lời quyết định cách gắn đường link.</div>
+</section>
+
+<section id="du-lieu">
+  <h2><span class="num">7</span>Dữ liệu lưu ở đâu</h2>
+  <p>Mười SharePoint List. Nguyên tắc chính: <b>lượng còn lại luôn tính từ sổ cái xuất/nhập</b>, không ai sửa số trực tiếp; <b>không xoá</b>, sai thì ghi bút toán đảo có lý do.</p>
+  <div class="cards three compact">
+    <article class="card"><h3 class="mono sm">LabCatalog</h3><p>Danh mục hoá chất, đơn vị gốc, lượng tồn chuẩn, ngưỡng cảnh báo.</p></article>
+    <article class="card"><h3 class="mono sm">LabLocations</h3><p>Vị trí lưu trữ (phòng, tủ, ngăn).</p></article>
+    <article class="card"><h3 class="mono sm">LabLots</h3><p>Hoá chất đầu vào, mỗi chai một dòng, một mã <span class="mono">IN-yy-nnnnn</span>.</p></article>
+    <article class="card"><h3 class="mono sm">LabPreps</h3><p>Dung dịch pha, mỗi lần pha một mã <span class="mono">PC-yy-nnnnn</span>.</p></article>
+    <article class="card"><h3 class="mono sm">LabPrepItems</h3><p>Công thức thực tế của mỗi lần pha (thành phần, lượng, số lô).</p></article>
+    <article class="card"><h3 class="mono sm">LabLedger</h3><p>Sổ cái xuất/nhập. Nguồn sự thật cho lượng còn lại.</p></article>
+    <article class="card"><h3 class="mono sm">LabTestUsage</h3><p>Nối biên bản thử nghiệm với hoá chất đã dùng.</p></article>
+    <article class="card"><h3 class="mono sm">LabAudit</h3><p>Nhật ký kiểm toán: ai làm gì, thành công hay bị từ chối.</p></article>
+    <article class="card"><h3 class="mono sm">LabRoles · LabSettings</h3><p>Phân quyền nghiệp vụ và cấu hình (ngưỡng mặc định, QR, nhãn…).</p></article>
+  </div>
+</section>
+
+<section id="phan-quyen">
+  <h2><span class="num">8</span>Ai làm được gì</h2>
+  <div class="tw"><table class="roles">
+    <thead><tr><th>Chức năng</th><th>Admin</th><th>Analyst</th><th>Reviewer</th><th>Viewer</th></tr></thead>
+    <tbody>
+      <tr><td>Quét, tra cứu, xem tồn, truy xuất</td><td>✔</td><td>✔</td><td>✔</td><td>✔</td></tr>
+      <tr><td>Nhập hoá chất, pha chế, ghi nhận sử dụng</td><td>✔</td><td>✔</td><td></td><td></td></tr>
+      <tr><td>Duyệt dung dịch pha, Release hoá chất kiểm nhập</td><td>✔</td><td></td><td>✔</td><td></td></tr>
+      <tr><td>Điều chỉnh tồn, huỷ bỏ, vô hiệu</td><td>✔</td><td></td><td></td><td></td></tr>
+      <tr><td>Danh mục, vị trí, cấu hình, vai trò</td><td>✔</td><td></td><td></td><td></td></tr>
+      <tr><td>Xem nhật ký kiểm toán</td><td>✔</td><td></td><td>✔</td><td></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="an-toan">
+  <h2><span class="num">9</span>An toàn dữ liệu</h2>
+  <ul class="checks">
+    <li><b>Người dùng chỉ đọc, flow mới ghi.</b> Không ai sửa trực tiếp số lượng trên SharePoint; mọi thay đổi đi qua flow có kiểm tra.</li>
+    <li><b>Kiểm tra lặp lại ở phía máy chủ.</b> Ẩn nút trong app chỉ để dễ dùng; quyền và quy tắc nghiệp vụ (đủ tồn, còn hạn, đúng đơn vị) được kiểm lại ở flow.</li>
+    <li><b>Danh tính lấy từ hệ thống</b>, không tin email do app gửi lên.</li>
+    <li><b>Chống ghi trùng</b> khi bấm hai lần hoặc mất mạng giữa chừng.</li>
+    <li><b>Sổ cái và nhật ký chỉ thêm</b>, không sửa, không xoá; đối soát hằng đêm so số dư với sổ cái.</li>
+    <li><b>Chỉ nhận link https</b> cho biên bản và COA, có thể giới hạn theo tên miền.</li>
+  </ul>
+</section>
+
+<section id="rui-ro">
+  <h2><span class="num">10</span>Rủi ro và hạn chế chính</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Mã</th><th>Rủi ro</th><th>Mức</th><th>Xử lý</th></tr></thead>
+    <tbody>
+      <tr><td>R-03</td><td>Ảnh QR đang lấy từ một dịch vụ công cộng (chỉ để chạy thử; chỉ gửi mã nội bộ, không gửi tên hoá chất hay thông tin tenant)</td><td><span class="pill amber">Trung bình</span></td><td>Phải thay bằng nguồn nội bộ <b>trước khi đưa vào dùng thật</b></td></tr>
+      <tr><td>R-11</td><td>Máy Zebra 1D không đọc được QR</td><td><span class="pill amber">Trung bình</span></td><td>Nhãn in thêm mã vạch Code 39; cần thử bằng đúng máy</td></tr>
+      <tr><td>R-05</td><td>Cần môi trường có Dataverse để dùng Solution và child flow</td><td><span class="pill amber">Trung bình</span></td><td>Hỏi IT; có phương án thay thế</td></tr>
+      <tr><td>R-07</td><td>Biên bản nằm ngoài hệ thống, link có thể hỏng khi đổi tên/di chuyển file</td><td><span class="pill amber">Trung bình</span></td><td>Số biên bản là khoá chính, link chỉ là tiện ích</td></tr>
+      <tr><td>R-01</td><td>Hai người trừ cùng một chai trong vài giây có thể đua nhau</td><td><span class="pill green">Thấp</span></td><td>Kiểm tra lại sau khi ghi, đối soát hằng đêm</td></tr>
+      <tr><td>R-04</td><td>Vai trò duy trì ở hai nơi (danh sách vai trò và nhóm SharePoint) dễ lệch</td><td><span class="pill amber">Trung bình</span></td><td>Quy trình cấp quyền; giai đoạn 2 tự đồng bộ</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Danh sách đầy đủ (R-01 đến R-12) ở phần tài liệu 05.</p>
+</section>
+
+<section id="cau-hoi">
+  <h2><span class="num">11</span>Câu hỏi cần anh trả lời</h2>
+  <ol class="plain">
+    <li><b>Biên bản thử nghiệm</b> trong phòng lab gọi là gì và lưu ở đâu? (mục 6)</li>
+    <li><b>Máy quét Zebra</b> là model nào (LS2208, DS2208, DS2278…), nối USB hay Bluetooth, nối với PC chạy trình duyệt hay Power Apps for Windows? <b>Máy in nhãn</b> và <b>kích thước nhãn</b>?</li>
+    <li><b>Cảnh báo sắp hết:</b> cách tính % so với lượng tồn chuẩn (mục 5) và ngưỡng mặc định 20% có hợp lý không?</li>
+    <li><b>Một chai một mã QR</b> có đúng cách làm việc không, hay theo lô?</li>
+    <li>Có cần <b>duyệt kiểm nhập</b> (hàng mới ở trạng thái chờ kiểm) và <b>duyệt dung dịch pha</b> (người thứ hai) không?</li>
+    <li><b>Quy mô:</b> bao nhiêu chai và dung dịch mỗi năm, bao nhiêu người dùng đồng thời?</li>
+    <li><b>Tiêu chuẩn áp dụng</b> (ISO/IEC 17025, GLP…) và thời gian lưu hồ sơ?</li>
+    <li><b>Môi trường Power Platform:</b> có Dataverse/Solution không, loại giấy phép, có tài khoản dịch vụ và hộp thư gửi cảnh báo không?</li>
+    <li><b>Đơn vị</b> khác (mol, %, đương lượng) hoặc hàng đếm theo cái?</li>
+    <li>Cần <b>ảnh cảnh báo nguy hiểm (GHS)</b> trên nhãn và kiểm soát hoá chất đặc biệt không?</li>
+    <li><b>Ngôn ngữ:</b> chỉ tiếng Việt hay song ngữ?</li>
+  </ol>
+</section>
+
+<section id="kiem-thu">
+  <h2><span class="num">12</span>Kiểm thử và nghiệm thu</h2>
+  <p>Có <b>65 ca kiểm thử</b>. Mỗi yêu cầu chỉ được coi là đạt khi các ca của nó đạt <b>trên thiết bị thật của phòng lab</b>.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Nhóm</th><th>Số ca</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td>Nhập hoá chất</td><td>10</td><td>Hạn dùng trước ngày nhận bị từ chối; bấm Lưu hai lần chỉ tạo một bộ bản ghi</td></tr>
+      <tr><td>Pha chế</td><td>9</td><td>Lỗi giữa chừng thì hoàn lại tồn nguồn; người duyệt không được trùng người pha</td></tr>
+      <tr><td>Lượng còn lại và cảnh báo</td><td>10</td><td>Còn 190 mL báo cần mua, còn 210 mL không báo; hết sạch vẫn nằm trong danh sách cần mua</td></tr>
+      <tr><td>Sử dụng và truy xuất</td><td>8</td><td>Gắn hai dung dịch vào một biên bản; truy xuôi qua 3 cấp pha</td></tr>
+      <tr><td>Quét mã</td><td>9</td><td>Máy Zebra có và không có phím Enter; máy 1D đọc mã vạch, máy 2D đọc QR; bộ gõ tiếng Việt đang bật</td></tr>
+      <tr><td>Bảo mật</td><td>12</td><td>Viewer gọi thẳng flow bị từ chối; không sửa được số lượng trên SharePoint</td></tr>
+      <tr><td>Hiệu năng và dễ dùng</td><td>7</td><td>5.000 chai, tìm kiếm dưới 3 giây; người mới nhập lô và pha dung dịch trong 5 phút</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="lo-trinh">
+  <h2><span class="num">13</span>Lộ trình triển khai</h2>
+  <ol class="timeline">
+    <li><b>Chốt câu hỏi mở</b> (mục 11), xin môi trường, tài khoản dịch vụ, nhóm bảo mật.</li>
+    <li><b>Dựng dữ liệu:</b> chạy script tạo 10 list, nạp danh mục, vị trí, vai trò, tách quyền.</li>
+    <li><b>Nhập hoá chất + sổ cái:</b> flow nhập và cổng ghi sổ cái, kiểm thử.</li>
+    <li><b>App giai đoạn 1:</b> khung điều hướng, Trang chủ, Quét mã, Tồn kho, Chi tiết, Nhập hoá chất, In nhãn. <i>Người dùng bắt đầu dùng được ở bước này.</i></li>
+    <li><b>Pha chế, ghi nhận sử dụng, truy xuất</b> cùng các flow tương ứng.</li>
+    <li><b>Quản trị, cảnh báo, đối soát</b>, rà soát bảo mật, UAT, chạy thử hai tuần với dữ liệu thật.</li>
+  </ol>
+</section>
+
+<section id="trang-thai">
+  <h2><span class="num">14</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Hạng mục</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+      <tr><td>Schema và script tạo list SharePoint</td><td><span class="pill green">Đã kiểm tra cú pháp</span> và sinh/phân tích XML của 99 cột. <b>Chưa chạy trên SharePoint thật.</b></td></tr>
+      <tr><td>Mã vạch Code 39</td><td><span class="pill green">Đã kiểm chứng</span> bằng bộ giải mã ZXing. Công thức Power Fx tạo mã vạch chưa chạy trong Studio; chưa thử với máy Zebra thật.</td></tr>
+      <tr><td>Mockup giao diện</td><td><span class="pill green">Đã mở và chụp ảnh</span> các màn chính trên máy tính; bản màn hình hẹp đã kiểm tra ở bề rộng 500 px.</td></tr>
+      <tr><td>Công thức Power Fx và các flow</td><td><span class="pill amber">Chưa chạy</span> trong Power Apps / Power Automate (chưa có môi trường). Danh sách điểm cần xác nhận ở tài liệu 04, mục 10.</td></tr>
+      <tr><td>Máy quét Zebra</td><td><span class="pill amber">Chưa thử.</span> Cách hoạt động dựa trên đặc tính chung của máy quét kiểu bàn phím và tài liệu Microsoft; cần thử bằng đúng model.</td></tr>
+    </tbody>
+  </table></div>
+</section>

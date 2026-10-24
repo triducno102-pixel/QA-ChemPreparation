@@ -95,6 +95,8 @@ Quy tắc tách nhiệm: người duyệt dung dịch ≠ người pha (BR-08). 
 | R-08 | Header danh tính người gọi có thể không có ở mọi tenant | Trung bình | Phương án thay bằng `My profile (V2)` | Xác nhận ở T-SEC-01 |
 | R-09 | Owner của site vẫn sửa được dữ liệu | Thấp | Giới hạn số Owner; versioning; đối soát; Purview audit | — |
 | R-10 | `Print()` hạn chế trên di động / chưa biết loại máy in nhãn | Thấp | In từ máy tính; chốt máy in và kích thước nhãn | Giai đoạn 2: flow sinh PDF nhãn |
+| R-11 | Máy quét Zebra 1D (laser, ví dụ LS2208) không đọc được QR | Trung bình | Nhãn in thêm mã vạch Code 39 (tạo offline trong app, đã kiểm chứng thuật toán bằng bộ giải mã); cần thử bằng đúng máy | Chốt model máy quét ở giai đoạn 0 |
+| R-12 | Control quét camera *Barcode reader* không chạy trong trình duyệt; ô nhập nhận dữ liệu từ máy quét phải giữ focus | Thấp | Máy cầm tay là cách chính (ô nhập + Timer); camera chỉ hiện trên điện thoại/tablet | Kiểm thử T-SC-02, T-SC-09 trên thiết bị thật |
 
 ## 6. Kế hoạch kiểm thử
 
@@ -144,7 +146,10 @@ Quy tắc tách nhiệm: người duyệt dung dịch ≠ người pha (BR-08). 
 | T-RM-03 | Owner sửa tay `RemainingQty` trên SharePoint | `LAB-S02` khôi phục theo sổ cái, ghi audit, gửi cảnh báo |
 | T-RM-04 | Nhiều giao dịch số lẻ (0,1 + 0,2 g …) | Không lệch số thực (làm tròn 4 số lẻ) |
 | T-RM-05 | Qua ngày hết hạn | `LAB-S01` đánh dấu Expired; không dùng được; vẫn truy xuất được |
-| T-RM-06 | Tổng tồn dưới `MinStockQty` | Hiện ở KPI "Dưới tồn tối thiểu" và trong email hằng ngày |
+| T-RM-06 | Hoá chất có tồn chuẩn 1.000 mL, ngưỡng mặc định 20%; còn 190 mL rồi 210 mL | 190 mL: hiện "Cần mua thêm" ở KPI, tab gộp và email; 210 mL: không cảnh báo |
+| T-RM-08 | Đặt `LowStockPct = 50` riêng cho một hoá chất, giữ mặc định ở hoá chất khác | Hoá chất riêng cảnh báo ở 50%, các hoá chất khác ở 20%; đổi `DefaultLowStockPct` chỉ ảnh hưởng nhóm dùng mặc định |
+| T-RM-09 | Dùng hết sạch mọi chai của một hoá chất (còn 0) | Vẫn xuất hiện ở "Cần mua thêm" với 0% (không biến mất khỏi danh sách) |
+| T-RM-10 | Chưa đặt `ParLevelQty`: nhập thêm chai làm tồn tổng vượt `PeakQty`; sau đó đặt `ParLevelQty` | `PeakQty` tăng theo lần nhập; khi có `ParLevelQty` thì mốc 100% dùng giá trị này |
 | T-RM-07 | Dùng hết đúng bằng tồn | `Status = Empty`, ẩn khỏi danh sách "đang dùng", vẫn tra cứu |
 
 **Ghi nhận sử dụng và truy xuất (yêu cầu 4)**
@@ -165,7 +170,10 @@ Quy tắc tách nhiệm: người duyệt dung dịch ≠ người pha (BR-08). 
 | ID | Kịch bản | Kỳ vọng |
 |---|---|---|
 | T-SC-01 | Quét nhãn bằng camera trong app (iOS, Android) | Mở đúng chi tiết trong ≤ 3 giây |
-| T-SC-02 | Súng quét USB/Bluetooth ở màn Quét | Mở đúng, không cần bấm thêm |
+| T-SC-02 | Máy Zebra cầm tay (USB, chế độ HID bàn phím) ở màn Quét — thử cả khi bật và khi tắt hậu tố Enter | Mở đúng chi tiết trong ≤ 1 giây, không cần bấm thêm; không cần quyền camera |
+| T-SC-07 | Máy Zebra **1D (laser)** quét mã vạch Code 39 trên nhãn in thật | Đọc đúng mã; mở đúng chi tiết |
+| T-SC-08 | Máy 2D hoặc điện thoại quét QR trên cùng nhãn | Đọc đúng mã |
+| T-SC-09 | Bộ gõ tiếng Việt (Unikey/Telex) đang bật khi quét; Caps Lock bật | Mã vẫn nhận đúng, hoặc app báo "Không nhận ra mã" rõ ràng (không mở sai đối tượng) |
 | T-SC-03 | QR `DeepLink` quét bằng camera điện thoại | Mở app đúng mã (cả trường hợp chưa đăng nhập) |
 | T-SC-04 | Nhãn in 50 × 30 mm | Quét được ở 20–30 cm; thử dán lên chai cong, nhãn ướt, ánh sáng yếu |
 | T-SC-05 | Quét mã lạ, URL ngoài, chuỗi 10.000 ký tự | App không treo, không mở trang ngoài |
@@ -206,20 +214,21 @@ Quy tắc tách nhiệm: người duyệt dung dịch ≠ người pha (BR-08). 
 |---|---|
 | 1. Đăng ký hoá chất đầu vào | T-IN-01…10 đạt |
 | 2. Đăng ký pha chế | T-PR-01…09 đạt |
-| 3. Theo dõi lượng còn lại | T-RM-01…07 đạt; bất biến không vi phạm trong 2 tuần chạy thử |
+| 3. Theo dõi lượng còn lại | T-RM-01…10 đạt; bất biến không vi phạm trong 2 tuần chạy thử |
 | 4. Truy xuất biên bản qua mã hoá chất pha | T-US-01…03, T-TR-01…05 đạt |
-| 5. QR / mã vạch | T-SC-01…06 đạt trên thiết bị thật của phòng lab |
+| 5. QR / mã vạch | T-SC-01…09 đạt trên thiết bị thật của phòng lab (đúng máy Zebra và máy in nhãn đang dùng) |
 | Bảo mật | T-SEC-01…12 đạt, không còn rủi ro mức Cao |
 
 ## 7. Câu hỏi mở (cần anh/đơn vị xác nhận)
 
-1. **Biên bản thử nghiệm hiện lưu ở đâu** (thư viện SharePoint, hệ thống khác, bản giấy)? Quyết định cách gắn liên kết và có cần tích hợp không.
+1. **Biên bản thử nghiệm** (xem định nghĩa ở [01 mục 3a](01-Thiet-ke-tong-the.md)) trong phòng lab anh gọi là gì (biên bản, báo cáo, phiếu kết quả…) và **hiện lưu ở đâu** (thư viện SharePoint, hệ thống khác, bản giấy)? Quyết định cách gắn liên kết và có cần tích hợp không.
 2. **Một chai một mã QR** có đúng với cách làm việc không, hay theo lô?
 3. **Có cần duyệt**: kiểm nhập (Quarantine → Release) và duyệt dung dịch pha (4 mắt)? Hiện thiết kế sẵn, mặc định tắt kiểm nhập, bật duyệt dung dịch ở mức ghi nhận.
-4. **Máy in nhãn** nào (Zebra/Brother/TSC…) và **kích thước nhãn**? **Thiết bị quét**: điện thoại hay súng quét?
+4. **Máy quét Zebra** đang dùng là model nào (ví dụ LS2208, DS2208, DS2278…) — loại **1D (laser) hay 2D (imager)**, nối USB hay Bluetooth, nối với PC chạy trình duyệt hay Power Apps for Windows? **Máy in nhãn** nào và **kích thước nhãn**?
 5. **Quy mô**: bao nhiêu chai/dung dịch mỗi năm, bao nhiêu người dùng đồng thời?
 6. **Tiêu chuẩn áp dụng** (ISO/IEC 17025, GLP…) và **thời gian lưu hồ sơ**?
 7. **Môi trường Power Platform**: có Dataverse/Solution không, loại giấy phép, có tài khoản dịch vụ và hộp thư gửi cảnh báo không?
 8. **Đơn vị**: có cần các đơn vị khác (mol, %, đương lượng) hoặc chất tồn kho đếm theo cái (pcs) không?
 9. Có cần **ảnh GHS/cảnh báo nguy hiểm** trên nhãn, và **kiểm soát chất thuộc diện đặc biệt** (tiền chất, chất độc) không?
 10. **Ngôn ngữ**: chỉ tiếng Việt hay song ngữ?
+11. **Cảnh báo sắp hết:** mốc 100% lấy từ *lượng tồn chuẩn* của từng hoá chất (hoặc tồn cao nhất đã đạt) và ngưỡng mặc định 20% có hợp lý không? Hay anh muốn so với từng chai, hoặc dùng số lượng tuyệt đối?

@@ -75,6 +75,7 @@ Flow luôn kiểm tra `Unit` của giao dịch khớp `Unit` của đối tượ
 | BR-10 | `Status` tự động: số dư = 0 → Empty; 0 < số dư < ban đầu → InUse; quá hạn → Expired (job hằng ngày). Chai/dung dịch Expired hoặc Empty vẫn tra cứu và truy xuất được. |
 | BR-11 | Công thức pha (`LabPrepItems`) bất biến sau khi tạo. |
 | BR-12 | Mỗi yêu cầu ghi mang `RequestId` (GUID); gửi lại cùng `RequestId` trả kết quả cũ, không ghi trùng. |
+| BR-13 | **Cảnh báo sắp hết (cần mua thêm):** với mỗi hoá chất, `Tổng tồn` = Σ `RemainingQty` của các chai `Available`/`InUse`/`Quarantine` (hàng đã nhập nhưng đang chờ kiểm vẫn tính là có hàng, để không mua trùng). `Mốc 100%` = `ParLevelQty` nếu có, ngược lại `PeakQty`. `Ngưỡng` = `LowStockPct` của hoá chất nếu có, ngược lại `DefaultLowStockPct`. Cảnh báo khi `Tổng tồn < Mốc 100% × Ngưỡng / 100` (kể cả khi đã hết sạch). Riêng từng chai đang dùng: tô vàng khi `RemainingQty / InitialQty × 100 < Ngưỡng`. |
 
 ## 6. Cấu hình mặc định (`LabSettings`)
 
@@ -82,6 +83,8 @@ Flow luôn kiểm tra `Unit` của giao dịch khớp `Unit` của đối tượ
 |---|---|---|
 | `LabName` | `Phòng thí nghiệm` | Tên hiển thị trên tiêu đề app và nhãn. |
 | `ExpiryWarnDays` | `30` | Cảnh báo hoá chất/dung dịch sắp hết hạn trong N ngày. |
+| `DefaultLowStockPct` | `20` | Ngưỡng cảnh báo sắp hết (%) mặc định, dùng cho hoá chất không tự đặt LowStockPct. Chai đang dùng dưới % này (so với lượng ban đầu) cũng được tô vàng. |
+| `LabelBarcode` | `Code39` | Mã vạch tuyến tính in thêm trên nhãn để máy quét 1D (laser) đọc được: Code39 hoặc None. QR luôn được in. |
 | `RequireIncomingRelease` | `false` | true: hoá chất mới nhập ở trạng thái Quarantine, Reviewer/Admin phải Release mới dùng được. |
 | `EnforcePrepExpiryLimit` | `true` | true: hạn dùng dung dịch pha không được vượt hạn dùng sớm nhất của thành phần. |
 | `MaxBottlesPerReceipt` | `20` | Số chai tối đa tạo trong một lần đăng ký nhập. |
@@ -115,7 +118,9 @@ Danh mục hoá chất (master data). Chỉ Admin chỉnh sửa.
 | `BaseUnit` | Đơn vị gốc | Lựa chọn | ✔ |  | g, mL, pcs (mặc định: g) | Mọi số lượng của hoá chất này đều lưu theo đơn vị gốc (g, mL hoặc pcs). |
 | `HazardClass` | Phân loại nguy hiểm (GHS) | Nhiều lựa chọn |  |  | Dễ cháy, Ăn mòn, Độc cấp tính, Oxy hoá, Kích ứng, Nguy hại sức khoẻ, Nguy hại môi trường, Khí nén, Dễ nổ, Không nguy hiểm |  |
 | `StorageCondition` | Điều kiện bảo quản | Lựa chọn |  |  | 15-25 °C (phòng), 2-8 °C, -20 °C, -80 °C, Tủ chống cháy, Tủ hút, Tránh ánh sáng |  |
-| `MinStockQty` | Tồn tối thiểu | Số |  |  | 4 số lẻ, ≥ 0 | Theo đơn vị gốc. Tổng RemainingQty các chai Available/InUse thấp hơn ngưỡng này sẽ bị cảnh báo. |
+| `ParLevelQty` | Lượng tồn chuẩn | Số |  |  | 4 số lẻ, ≥ 0 | Lượng muốn có khi kho đầy đủ (đơn vị gốc). Là mốc 100% để tính % còn lại. Để trống = hệ thống dùng PeakQty. |
+| `LowStockPct` | Ngưỡng cảnh báo (%) | Số |  |  | 0 số lẻ, ≥ 1, ≤ 99 | Cảnh báo cần mua thêm khi tổng tồn nhỏ hơn % này của lượng tồn chuẩn. Để trống = dùng DefaultLowStockPct trong LabSettings. |
+| `PeakQty` | Tồn cao nhất đã đạt | Số |  |  | 4 số lẻ, ≥ 0 | Hệ thống tự cập nhật (LAB-F01) sau mỗi lần nhập = tổng tồn lớn nhất từng đạt. Dùng làm lượng chuẩn khi ParLevelQty trống; Admin có thể đặt lại. |
 | `SDSLink` | Link SDS | Hyperlink |  |  |  |  |
 | `IsActive` | Đang sử dụng | Có/Không |  |  | mặc định: Có |  |
 

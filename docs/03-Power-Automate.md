@@ -11,7 +11,7 @@ Flow là **backend** của hệ thống: toàn bộ thao tác làm thay đổi d
 | **LAB-F03** | `LAB-F03 RecordUsage` | Instant | Admin, Analyst | Ghi nhận sử dụng / gắn hoá chất vào biên bản thử nghiệm |
 | **LAB-F04** | `LAB-F04 AdminAction` | Instant | Admin (Release/Review: Reviewer) | Điều chỉnh, huỷ bỏ, vô hiệu, release, duyệt |
 | **LAB-C01** | `LAB-C01 PostTransaction` | Child flow | F01–F04 | Cổng duy nhất ghi sổ cái + cập nhật số dư/trạng thái |
-| **LAB-S01** | `LAB-S01 DailyExpiryStock` | Scheduled 07:00 | — | Đánh dấu hết hạn, cảnh báo sắp hết hạn / dưới tồn tối thiểu |
+| **LAB-S01** | `LAB-S01 DailyExpiryStock` | Scheduled 07:00 | — | Đánh dấu hết hạn, cảnh báo sắp hết hạn / sắp hết (dưới ngưỡng %) |
 | **LAB-S02** | `LAB-S02 Reconcile` | Scheduled 02:00 | — | Đối soát cache với sổ cái, sửa lệch, phát hiện bản ghi dở dang |
 
 Giai đoạn 2 (chưa thiết kế chi tiết): duyệt nhập kho bằng Approvals, thông báo duyệt dung dịch qua Teams, sinh PDF nhãn, xuất báo cáo truy xuất PDF/Excel, upload COA.
@@ -101,8 +101,9 @@ Mọi nhánh từ chối nghiệp vụ trả `success=false` + `message` rõ ngu
    3. **Create item** `LabLedger`: `ItemType=Lot`, `ItemID=ID`, `TxnType=Receive`, `QtyDelta=qty`, `BalanceAfter=qty`, `Actor=caller`.
    4. **Append to array variable** `codes`.
    (Giao dịch `Receive` ghi trực tiếp, không qua `LAB-C01` vì chưa có số dư trước đó.)
-7. **Create item** `LabAudit`: `Title=RegisterIncoming`, `Result=Success`, `RequestId`, `Detail={"codes":[...]}`, `EntityCode` = mã đầu tiên.
-8. **Respond**: `success=true`, `message="Đã tạo @{length(variables('codes'))} chai"`, `codes=join(sort(variables('codes')),',')`.
+7. **Cập nhật tồn cao nhất (`PeakQty`):** Get items `LabLots` — Filter `CatalogID eq <id> and (Status eq 'Available' or Status eq 'InUse' or Status eq 'Quarantine')`, cộng `RemainingQty` → `total`. Nếu `total` lớn hơn `PeakQty` của danh mục (hoặc `PeakQty` trống) → Update item `LabCatalog` đặt `PeakQty = total`. Đây là mốc 100% mặc định cho cảnh báo sắp hết khi Admin chưa đặt `ParLevelQty`.
+8. **Create item** `LabAudit`: `Title=RegisterIncoming`, `Result=Success`, `RequestId`, `Detail={"codes":[...]}`, `EntityCode` = mã đầu tiên.
+9. **Respond**: `success=true`, `message="Đã tạo @{length(variables('codes'))} chai"`, `codes=join(sort(variables('codes')),',')`.
 
 **Lỗi dở dang:** nếu lỗi xảy ra giữa bước 6.1 và 6.3 thì có thể tồn tại chai có `Title` dạng GUID hoặc thiếu dòng sổ cái. `LAB-S02` quét và sửa/cảnh báo các trường hợp này (mục 9).
 
@@ -242,8 +243,13 @@ Mọi `action` đều ghi `LabAudit` kèm `reason`, kể cả khi bị từ ch�
 1. Đọc `ExpiryWarnDays` (mặc định 30), `AlertEmails`.
 2. **Đánh dấu hết hạn:** Get `LabLots` và `LabPreps` — Filter `(Status eq 'Available' or Status eq 'InUse') and ExpiryDate lt '<hôm nay>'` → Update `Status=Expired`. Ghi một dòng `LabAudit` tổng kết.
 3. **Sắp hết hạn:** cùng bộ lọc với `ExpiryDate ge '<hôm nay>' and ExpiryDate le '<hôm nay + N>'` → *Create HTML table* (mã, tên, số lô, hạn dùng, còn lại, vị trí).
-4. **Dưới tồn tối thiểu:** Get `LabCatalog` — `IsActive eq 1 and MinStockQty gt 0`; với mỗi dòng Get `LabLots` — `CatalogID eq <id> and (Status eq 'Available' or Status eq 'InUse')`, cộng `RemainingQty`; nếu < `MinStockQty` thì thêm vào bảng.
-5. Nếu có ít nhất một mục: **Send an email (V2)** tới `AlertEmails` (HTML gọn: 3 bảng + link mở app).
+4. **Sắp hết — cần mua thêm (BR-13):** đọc `DefaultLowStockPct` (mặc định 20). Get `LabCatalog` — `IsActive eq 1`. Với mỗi hoá chất:
+   - `ref` = `ParLevelQty` nếu > 0, ngược lại `PeakQty`; nếu `ref ≤ 0` thì bỏ qua (chưa có mốc để so);
+   - `pct` = `LowStockPct` nếu > 0, ngược lại `DefaultLowStockPct`;
+   - Get `LabLots` — `CatalogID eq <id> and (Status eq 'Available' or Status eq 'InUse' or Status eq 'Quarantine')`, cộng `RemainingQty` → `total`;
+   - nếu `total < ref × pct / 100` (kể cả `total = 0`) → thêm dòng vào bảng "Cần mua thêm": tên, còn `total` / chuẩn `ref` (`total/ref` %), ngưỡng `pct`%.
+4b. **Chai đang dùng sắp hết:** Get `LabLots` — `Status eq 'InUse'`; với mỗi chai lấy `pct` của hoá chất (như trên), chọn chai có `RemainingQty × 100 < InitialQty × pct` bằng *Filter array* (OData không so sánh hai cột với nhau được) → bảng "Chai sắp hết".
+5. Nếu có ít nhất một mục: **Send an email (V2)** tới `AlertEmails` (HTML gọn: bảng sắp hết hạn, bảng **cần mua thêm**, bảng chai sắp hết + link mở app).
 6. Phase 2: thêm bài đăng Teams; ghi snapshot KPI vào `LabSettings` khi dữ liệu vượt ngưỡng delegation.
 
 ## 9. LAB-S02 Reconcile (Recurrence 02:00)

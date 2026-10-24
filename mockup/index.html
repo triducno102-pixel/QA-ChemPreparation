@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LabChem — Mockup giao diện</title>
+<style>
+:root{
+  --primary:#0B7A75; --primary-dark:#085A56; --primary-tint:#E6F4F3;
+  --bg:#F5F7FA; --surface:#fff; --border:#E1E6EC; --text:#1B2430; --muted:#617082;
+  --success:#107C10; --warning:#9A5700; --danger:#C4314B; --info:#0F6CBD;
+  --success-tint:#E7F4E7; --warning-tint:#FFF1DC; --danger-tint:#FCE8EC; --info-tint:#E5F0FA; --muted-tint:#EEF1F5;
+  --radius:8px; --shadow:0 1px 2px rgba(27,36,48,.06),0 2px 8px rgba(27,36,48,.05);
+  font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+button{font:inherit;cursor:pointer}
+h1{font-size:22px;margin:0 0 2px;font-weight:600}
+h2{font-size:15px;margin:0 0 12px;font-weight:600}
+h3{font-size:13px;margin:0 0 8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.muted{color:var(--muted)}
+.mono{font-family:Consolas,"Cascadia Mono",monospace;font-weight:600;white-space:nowrap}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:56px 1fr;height:100vh}
+.topbar{grid-column:1/3;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;min-width:220px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:-2px}
+.quick{flex:1;max-width:420px;position:relative}
+.quick input{width:100%;height:36px;border:1px solid var(--border);border-radius:var(--radius);padding:0 12px 0 36px;background:var(--bg);font:inherit}
+.quick svg{position:absolute;left:10px;top:9px;color:var(--muted)}
+.user{margin-left:auto;display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--primary-tint);color:var(--primary-dark);display:grid;place-items:center;font-weight:600}
+.role{font-size:12px;color:var(--muted)}
+.nav{background:var(--surface);border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border:0;background:none;border-radius:var(--radius);color:var(--text);text-align:left}
+.nav button:hover{background:var(--bg)}
+.nav button.on{background:var(--primary-tint);color:var(--primary-dark);font-weight:600}
+.nav .sep{flex:1}
+.main{overflow:auto;padding:24px;min-width:0}
+.page{max-width:1180px;margin:0 auto}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-dark)}
+.btn.danger{color:var(--danger);border-color:#EBC3CC}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.badge,.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.success{background:var(--success-tint);color:var(--success)} .warning{background:var(--warning-tint);color:var(--warning)}
+.danger.badge,.danger.chip{background:var(--danger-tint);color:var(--danger)} .info{background:var(--info-tint);color:var(--info)}
+.primary.badge{background:var(--primary-tint);color:var(--primary-dark)} .muted.badge{background:var(--muted-tint);color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:13px;font-weight:600}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{height:40px;border:1px solid #C9D1DB;border-radius:var(--radius);padding:0 12px;font:inherit;background:#fff;color:var(--text);width:100%}
+.field textarea{height:76px;padding:8px 12px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);outline:2px solid var(--primary-tint)}
+.field .hint{font-size:12px;color:var(--muted)} .field .err{font-size:12px;color:var(--danger);min-height:0}
+.field.bad input{border-color:var(--danger)}
+.row{display:grid;gap:12px}
+.row.c2{grid-template-columns:1fr 1fr} .row.c3{grid-template-columns:repeat(3,1fr)} .row.c21{grid-template-columns:2fr 1fr}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+.split-a{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}
+.split-b{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);align-items:start}
+.split-c{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}
+.split-d{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}
+.sticky{position:sticky;top:0}
+.tabs{overflow-x:auto}
+.tabs button{white-space:nowrap}
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.kpi{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.kpi:hover{border-color:var(--primary)}
+.kpi .top{display:flex;justify-content:space-between;color:var(--muted);font-weight:600;font-size:13px}
+.kpi .ico{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+.kpi .val{font-size:30px;font-weight:600;line-height:1.1}
+.kpi .sub{font-size:12px;color:var(--muted)}
+
+/* ---------- list / table ---------- */
+.list{display:flex;flex-direction:column}
+.list .it{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.list .it:first-child{border-top:0}
+.list .it .grow{flex:1;min-width:0}
+.list .it .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:none}
+.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar .search{position:relative;flex:1;min-width:220px;max-width:420px}
+.toolbar .search input{width:100%;height:40px;border:1px solid #C9D1DB;border-radius:var(--radius);padding:0 12px 0 38px;font:inherit}
+.toolbar .search svg{position:absolute;left:11px;top:11px;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.tabs button{border:0;background:none;padding:10px 14px;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--primary-dark);border-color:var(--primary)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.fchip{height:32px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:16px;font-weight:600;font-size:13px;color:var(--muted)}
+.fchip.on{background:var(--primary-tint);border-color:var(--primary);color:var(--primary-dark)}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border);background:#FAFBFC;position:sticky;top:0}
+td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{cursor:pointer} tbody tr:hover{background:#F8FAFB}
+.tablewrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+.gauge{height:8px;border-radius:4px;background:var(--muted-tint);overflow:hidden;min-width:90px}
+.gauge span{display:block;height:100%;background:var(--primary);border-radius:4px}
+.gauge.low span{background:var(--warning)} .gauge.zero span{background:var(--muted)}
+.qtext{font-size:12px;color:var(--muted);margin-top:4px}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+
+/* ---------- drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(27,36,48,.35);opacity:0;pointer-events:none;transition:.2s;z-index:20}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:460px;max-width:100vw;background:var(--surface);z-index:21;transform:translateX(100%);transition:.25s;box-shadow:-8px 0 24px rgba(27,36,48,.12);display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.drawer .hd{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.drawer .bd{padding:20px;overflow:auto;flex:1}
+.drawer .ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+.x{margin-left:auto;border:0;background:none;width:36px;height:36px;border-radius:8px;color:var(--muted)} .x:hover{background:var(--bg)}
+.qrbox{width:120px;height:120px;padding:8px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);flex:none}
+.qrbox svg{width:100%;height:100%;display:block}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600}
+.bigq{font-size:26px;font-weight:600}
+.timeline{display:flex;flex-direction:column}
+.timeline .ev{display:grid;grid-template-columns:20px 1fr auto;gap:10px;padding:8px 0;position:relative}
+.timeline .ev::before{content:"";position:absolute;left:5px;top:22px;bottom:-8px;width:2px;background:var(--border)}
+.timeline .ev:last-child::before{display:none}
+.timeline .pt{width:12px;height:12px;border-radius:50%;background:var(--primary);margin-top:5px;border:2px solid #fff;box-shadow:0 0 0 1px var(--primary)}
+.timeline .pt.neg{background:var(--warning);box-shadow:0 0 0 1px var(--warning)}
+.neg-t{color:var(--warning)} .pos-t{color:var(--success)}
+
+/* ---------- scan ---------- */
+.scanner{aspect-ratio:4/3;max-height:380px;width:100%;border-radius:var(--radius);background:linear-gradient(135deg,#17222E,#22303F);position:relative;overflow:hidden;display:grid;place-items:center;color:#9FB0C3}
+.scanner .frame{width:62%;aspect-ratio:1;position:relative}
+.scanner .frame i{position:absolute;width:26px;height:26px;border:3px solid #5FD0C8}
+.scanner .frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.scanner .frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0;border-radius:0 8px 0 0}
+.scanner .frame i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0;border-radius:0 0 0 8px}
+.scanner .frame i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.scanner .line{position:absolute;left:0;right:0;height:2px;background:#5FD0C8;box-shadow:0 0 12px #5FD0C8;animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:6%}50%{top:92%}}
+.scanner p{position:absolute;bottom:14px;margin:0;font-size:13px}
+@media (prefers-reduced-motion:reduce){.scanner .line{animation:none;top:50%}}
+
+/* ---------- stepper ---------- */
+.stepper{display:flex;gap:8px;margin-bottom:16px}
+.step{flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);color:var(--muted);font-weight:600}
+.step b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--muted-tint);font-size:12px}
+.step.on{border-color:var(--primary);color:var(--primary-dark)} .step.on b{background:var(--primary);color:#fff}
+.step.done b{background:var(--success);color:#fff}
+.ing{display:grid;grid-template-columns:1.6fr 1fr 1.3fr 130px;gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--border)}
+.ing:first-of-type{border-top:0}
+.ing .qty{display:flex;gap:6px}
+.ing .qty input{width:100%;height:36px;border:1px solid #C9D1DB;border-radius:var(--radius);padding:0 10px;font:inherit}
+.ing .qty select{height:36px;border:1px solid #C9D1DB;border-radius:var(--radius);padding:0 6px;font:inherit}
+.ing.bad .qty input{border-color:var(--danger)}
+.ing .e{color:var(--danger);font-size:12px;margin-top:4px}
+.callout{display:flex;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--info-tint);color:#0B4F8A;font-size:13px}
+.callout.warn{background:var(--warning-tint);color:var(--warning)}
+
+/* ---------- label ---------- */
+.label{width:300px;border:1px dashed #9AA7B6;border-radius:6px;padding:10px;display:grid;grid-template-columns:84px 1fr;gap:10px;background:#fff}
+.label .qr{width:84px;height:84px} .label .qr svg{width:100%;height:100%;display:block}
+.label .c{font-family:Consolas,monospace;font-weight:700;font-size:15px}
+.label .n{font-weight:600;font-size:13px;line-height:1.25}
+.label .m{font-size:11px;color:#3B4756}
+.labels{display:flex;flex-wrap:wrap;gap:12px}
+
+/* ---------- trace tree ---------- */
+.tree,.tree ul{list-style:none;margin:0;padding-left:0}
+.tree ul{margin-left:18px;padding-left:18px;border-left:2px solid var(--border)}
+.node{position:relative;padding:6px 0}
+.tree ul>li>.node::before{content:"";position:absolute;left:-18px;top:26px;width:16px;border-top:2px solid var(--border)}
+.nodecard{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.nodecard.root{border-color:var(--primary);background:var(--primary-tint)}
+.nodecard .t{font-weight:600}
+.nodecard .q{margin-left:auto;text-align:right;white-space:nowrap}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:#1B2430;color:#fff;padding:12px 18px;border-radius:var(--radius);opacity:0;transition:.25s;z-index:40;max-width:90vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1100px){
+  .app{grid-template-columns:72px minmax(0,1fr)}
+  .nav button span{display:none} .nav button{justify-content:center;padding:0}
+  .brand{min-width:0} .brand div{display:none}
+}
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(2,1fr)} .grid2,.grid2[class*="split"]{grid-template-columns:minmax(0,1fr)} .sticky{position:static}
+  .hide-m{display:none} .row.c3{grid-template-columns:1fr 1fr}
+  .ing{grid-template-columns:1fr 1fr}
+}
+@media (max-width:700px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:56px minmax(0,1fr) 60px}
+  .nav{grid-row:3;flex-direction:row;border-right:0;border-top:1px solid var(--border);padding:6px;justify-content:space-around;overflow:auto}
+  .nav .sep,.nav button.adm{display:none}
+  .nav button{height:48px;min-width:48px}
+  .main{padding:16px}
+  .quick,.user>div:first-child{display:none}
+  .row.c2,.row.c3,.row.c21{grid-template-columns:1fr}
+  .stepper .step span{display:none}
+  .kpis{gap:12px}
+  .cards table,.cards tbody,.cards tr,.cards td{display:block}
+  .cards thead{display:none}
+  .cards tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px;border-bottom:1px solid var(--border)}
+  .cards td{padding:0;border:0}
+  .cards td:nth-child(1){grid-column:1;grid-row:1;white-space:nowrap}
+  .cards td:nth-child(7){grid-column:2;grid-row:1;justify-self:end}
+  .cards td:nth-child(2){grid-column:1/3;grid-row:2}
+  .cards td:nth-child(5){grid-column:1/3;grid-row:3}
+  .cards td:nth-child(6){grid-column:1/3;grid-row:4}
+  .toolbar .search{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="logo" id="logo"></div><div>LabChem<small>Phòng Hoá phân tích</small></div></div>
+    <div class="quick"><span id="qico"></span><input id="quick" placeholder="Quét hoặc nhập mã: IN-26-00042, PC-26-00031…" aria-label="Quét hoặc nhập mã nhanh"></div>
+    <div class="user"><div style="text-align:right"><div style="font-weight:600">Nguyễn Văn A</div><div class="role">Analyst</div></div><div class="avatar">A</div></div>
+  </header>
+  <nav class="nav" id="nav" aria-label="Điều hướng chính"></nav>
+  <main class="main"><div class="page" id="page"></div></main>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* ============ dữ liệu mẫu (24/10/2026) ============ */
+const TODAY = new Date('2026-10-24');
+const fmt = d => { const x = new Date(d); return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear(); };
+const days = d => Math.round((new Date(d) - TODAY) / 864e5);
+const num = n => Number(n).toLocaleString('vi-VN', {maximumFractionDigits: 2});
+const STATUS = {Quarantine:['Chờ kiểm','info'],Available:['Sẵn sàng','success'],InUse:['Đang dùng','primary'],Empty:['Đã hết','muted'],Expired:['Hết hạn','danger'],Disposed:['Đã huỷ','muted']};
+const LOTS = [
+ {code:'IN-26-00042',name:'Natri hydroxit (NaOH) AR',cas:'1310-73-2',lot:'1.06498.1000',mfr:'Merck',sup:'Cty Hoá chất Á Châu',exp:'2028-03-01',rem:412.5,init:500,unit:'g',loc:'P.205 · Tủ A · Ngăn 2',status:'InUse',recv:'2026-05-12'},
+ {code:'IN-26-00057',name:'Nước cất 2 lần (HPLC grade)',cas:'7732-18-5',lot:'WH-221907',mfr:'Fisher',sup:'Cty Khoa học KT',exp:'2027-09-30',rem:2500,init:4000,unit:'mL',loc:'P.205 · Kệ B',status:'InUse',recv:'2026-08-02'},
+ {code:'IN-26-00061',name:'Methanol HPLC',cas:'67-56-1',lot:'MH-77120',mfr:'Merck',sup:'Cty Hoá chất Á Châu',exp:'2026-11-12',rem:3200,init:4000,unit:'mL',loc:'P.205 · Tủ chống cháy',status:'InUse',recv:'2026-03-18'},
+ {code:'IN-26-00029',name:'Acid clohydric 37% AR',cas:'7647-01-0',lot:'K48371017',mfr:'Merck',sup:'Cty Hoá chất Á Châu',exp:'2028-01-31',rem:417,init:500,unit:'mL',loc:'P.205 · Tủ hút',status:'InUse',recv:'2026-02-10'},
+ {code:'IN-26-00033',name:'Acid clohydric 37% AR',cas:'7647-01-0',lot:'K47110855',mfr:'Merck',sup:'Cty Hoá chất Á Châu',exp:'2026-10-10',rem:480,init:500,unit:'mL',loc:'P.205 · Tủ hút',status:'Expired',recv:'2025-10-02'},
+ {code:'IN-26-00070',name:'Kali hydro phtalat (chuẩn)',cas:'877-24-7',lot:'KHP-5521',mfr:'Sigma-Aldrich',sup:'Cty Khoa học KT',exp:'2029-06-30',rem:100,init:100,unit:'g',loc:'P.205 · Tủ A · Ngăn 1',status:'Quarantine',recv:'2026-10-23'},
+ {code:'IN-26-00018',name:'Acetonitrile LC-MS',cas:'75-05-8',lot:'ACN-90331',mfr:'Fisher',sup:'Cty Khoa học KT',exp:'2027-04-15',rem:0,init:1000,unit:'mL',loc:'P.205 · Tủ chống cháy',status:'Empty',recv:'2026-01-20'}
+];
+const PREPS = [
+ {code:'PC-26-00017',name:'NaOH 0,1 N',conc:'0,1 mol/L',prep:'2026-10-20',exp:'2026-11-20',rem:850,init:1000,unit:'mL',loc:'P.205 · Kệ B',status:'InUse',by:'Trần Thị B',review:'Approved'},
+ {code:'PC-26-00021',name:'Đệm phosphate pH 7,0',conc:'50 mM',prep:'2026-10-15',exp:'2026-10-29',rem:600,init:1000,unit:'mL',loc:'P.205 · Tủ lạnh 2–8 °C',status:'InUse',by:'Nguyễn Văn A',review:'Pending'},
+ {code:'PC-26-00012',name:'HCl 1 N (dung dịch gốc)',conc:'1 mol/L',prep:'2026-10-12',exp:'2027-01-12',rem:790,init:1000,unit:'mL',loc:'P.205 · Tủ hút',status:'InUse',by:'Trần Thị B',review:'Approved'},
+ {code:'PC-26-00031',name:'HCl 0,1 N (làm việc)',conc:'0,1 mol/L',prep:'2026-10-20',exp:'2026-11-20',rem:925,init:1000,unit:'mL',loc:'P.205 · Kệ B',status:'InUse',by:'Trần Thị B',review:'Approved'}
+];
+const LEDGER = {
+ 'IN-26-00042':[['24/10 09:12','Dùng để pha','−4,0 g','PC-26-00017','Nguyễn Văn A',-4],['20/10 14:03','Dùng để pha','−4,0 g','PC-26-00017','Trần Thị B',-4],['02/06 10:30','Dùng để pha','−79,5 g','PC-26-00003','Trần Thị B',-79.5],['12/05 08:45','Nhập kho','+500 g','','Nguyễn Văn A',500]],
+ 'PC-26-00031':[['23/10 15:20','Dùng thử nghiệm','−50 mL','BB-2026-0161','Phạm Văn D',-50],['22/10 10:05','Dùng thử nghiệm','−25 mL','BB-2026-0153','Phạm Văn D',-25],['20/10 11:00','Tạo dung dịch','+1.000 mL','','Trần Thị B',1000]]
+};
+const RECIPE = {'PC-26-00017':[['IN-26-00042','NaOH AR · lô 1.06498.1000','4,0 g'],['IN-26-00057','Nước cất 2 lần','1.000 mL']],'PC-26-00031':[['PC-26-00012','HCl 1 N (dung dịch gốc)','100 mL'],['IN-26-00057','Nước cất 2 lần','900 mL']]};
+const REPORTS = {'PC-26-00031':[['BB-2026-0161','Xác định độ acid','23/10/2026','50 mL'],['BB-2026-0153','Chuẩn độ acid-base','22/10/2026','25 mL']]};
+const TRACE = {
+ 'PC-26-00031':{kind:'Prep',title:'HCl 0,1 N (làm việc)',meta:'Pha 20/10/2026 · HSD 20/11/2026 · Trần Thị B · Đã duyệt bởi Lê Văn C',
+  tree:{code:'PC-26-00031',name:'HCl 0,1 N (làm việc)',q:'1.000 mL',kids:[
+   {code:'PC-26-00012',name:'HCl 1 N (dung dịch gốc) · pha 12/10/2026',q:'100 mL',kids:[
+     {code:'IN-26-00029',name:'Acid clohydric 37% AR · lô K48371017 · Merck · COA ✓',q:'83 mL',kids:[]},
+     {code:'IN-26-00057',name:'Nước cất 2 lần · lô WH-221907',q:'917 mL',kids:[]}]},
+   {code:'IN-26-00057',name:'Nước cất 2 lần · lô WH-221907',q:'900 mL',kids:[]}]},
+  reports:[['BB-2026-0161','Xác định độ acid','23/10/2026','50 mL','Phạm Văn D',''],['BB-2026-0153','Chuẩn độ acid-base','22/10/2026','25 mL','Phạm Văn D','']],
+  note:''},
+ 'IN-26-00029':{kind:'Lot',title:'Acid clohydric 37% AR',meta:'Lô K48371017 · Merck · HSD 31/01/2028 · Còn 417 / 500 mL',
+  tree:{code:'IN-26-00029',name:'Acid clohydric 37% AR',q:'500 mL',kids:[
+   {code:'PC-26-00012',name:'HCl 1 N (dung dịch gốc) · dùng 83 mL',q:'1.000 mL',kids:[
+     {code:'PC-26-00031',name:'HCl 0,1 N (làm việc) · dùng 100 mL',q:'1.000 mL',kids:[]}]}]},
+  reports:[['BB-2026-0161','Xác định độ acid','23/10/2026','50 mL','Phạm Văn D','PC-26-00031'],['BB-2026-0153','Chuẩn độ acid-base','22/10/2026','25 mL','Phạm Văn D','PC-26-00031'],['BB-2026-0140','Chuẩn hoá NaOH','14/10/2026','10 mL','Lê Thị E','PC-26-00012']]}
+};
+
+/* ============ tiện ích ============ */
+const P = {
+ home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+ scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M4 12h16"/>',
+ box:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+ plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+ flask:'<path d="M9 3h6M10 3v6L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9V3"/><path d="M7 15h10"/>',
+ route:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h8"/>',
+ sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+ alert:'<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18h.01"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+ print:'<path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="9" rx="2"/><path d="M7 14h10v7H7z"/>',
+ link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+ check:'<path d="M5 12l5 5L20 7"/>', layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+ down:'<path d="M12 4v14M6 12l6 6 6-6"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', beaker:'<path d="M8 3h8M9 3v6l-4 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-4-9V3"/>'
+};
+const I = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]||''}</svg>`;
+const badge = s => `<span class="badge ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+function expiry(d, status){
+  if (status === 'Empty') return `<span class="muted">${fmt(d)}</span>`;
+  const n = days(d);
+  if (n < 0) return `<span class="chip danger">Quá hạn ${-n} ngày</span>`;
+  if (n <= 30) return `<span class="chip warning">Còn ${n} ngày · ${fmt(d)}</span>`;
+  return `<span class="chip success">${fmt(d)}</span>`;
+}
+function gauge(r, i, unit){
+  const p = i ? Math.round(r / i * 100) : 0;
+  const cls = r === 0 ? 'zero' : (p < 20 ? 'low' : '');
+  return `<div class="gauge ${cls}" role="img" aria-label="Còn ${p}%"><span style="width:${p}%"></span></div><div class="qtext">${num(r)} / ${num(i)} ${unit} · ${p}%</div>`;
+}
+function qr(text){
+  try {
+    const q = qrcode(0, 'M'); q.addData(text); q.make();
+    try { return q.createSvgTag({cellSize: 4, margin: 0, scalable: true}); } catch (e) { return q.createSvgTag(4, 0); }
+  } catch (e) {
+    let s = ''; let h = 0; for (const c of text) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) { h = (h * 1103515245 + 12345) >>> 0; if ((h >> 16) & 1) s += `<rect x="${x}" y="${y}" width="1" height="1"/>`; }
+    return `<svg viewBox="0 0 21 21" fill="#1B2430">${s}</svg>`;
+  }
+}
+const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 2800); };
+const find = c => LOTS.find(x => x.code === c) || PREPS.find(x => x.code === c);
+function label(code, name, l2, l3){
+  return `<div class="label"><div class="qr">${qr(code)}</div><div><div class="c">${code}</div><div class="n">${name}</div><div class="m">${l2}</div><div class="m">${l3}</div></div></div>`;
+}
+
+/* ============ khung điều hướng ============ */
+const NAV = [['home','Trang chủ','home'],['scan','Quét mã','scan'],['inventory','Tồn kho','box'],['lot','Nhập hoá chất','plus'],['prep','Pha chế','flask'],['trace','Truy xuất','route'],['admin','Quản trị','sliders']];
+let view = 'home';
+const state = {tab:'lot', q:'', status:'', step:2};
+function nav(){
+  document.getElementById('nav').innerHTML = NAV.map(([k,t,i]) => (k==='admin'?'<div class="sep"></div>':'') + `<button class="${k===view?'on':''} ${k==='admin'?'adm':''}" onclick="go('${k}')" aria-label="${t}" ${k===view?'aria-current="page"':''}>${I(i)}<span>${t}</span></button>`).join('');
+}
+function go(v, arg){ view = v; closeDrawer(); nav(); const el = document.getElementById('page'); el.innerHTML = (V[v] || V.home)(arg); document.querySelector('.main').scrollTop = 0; if (AFTER[v]) AFTER[v](arg); }
+function open_(code){ const o = find(code); if (!o) { toast('Không tìm thấy mã ' + code); return; } drawer(o, 'ledger'); }
+
+/* ============ màn hình ============ */
+const V = {};
+const AFTER = {};
+
+V.home = () => {
+  const act = LOTS.filter(l => l.status==='Available' || l.status==='InUse');
+  const exp30 = act.filter(l => days(l.exp) >= 0 && days(l.exp) <= 30).length + PREPS.filter(p => days(p.exp) >= 0 && days(p.exp) <= 30).length;
+  const kpi = (t,v,sub,ic,tone) => `<button class="kpi" onclick="go('inventory')"><div class="top"><span>${t}</span><span class="ico ${tone}">${I(ic)}</span></div><div class="val">${v}</div><div class="sub">${sub}</div></button>`;
+  const warn = [
+    ...LOTS.filter(l => l.status==='Expired').map(l => ({c:l.code,t:l.name,s:`Quá hạn ${-days(l.exp)} ngày · còn ${num(l.rem)} ${l.unit}`,tone:'danger',ic:'alert'})),
+    ...PREPS.filter(p => days(p.exp) <= 7 && days(p.exp) >= 0).map(p => ({c:p.code,t:p.name,s:`Còn ${days(p.exp)} ngày · ${num(p.rem)} ${p.unit}`,tone:'warning',ic:'clock'})),
+    ...LOTS.filter(l => l.status==='InUse' && days(l.exp) >= 0 && days(l.exp) <= 30).map(l => ({c:l.code,t:l.name,s:`Còn ${days(l.exp)} ngày · ${num(l.rem)} ${l.unit}`,tone:'warning',ic:'clock'})),
+    {c:'IN-26-00018',t:'Acetonitrile LC-MS',s:'Đã hết — tồn dưới mức tối thiểu 1.000 mL',tone:'info',ic:'layers'}
+  ];
+  return `
+  <div class="page-head"><div><h1>Xin chào, Nguyễn Văn A</h1><p class="muted" style="margin:0">Thứ Bảy, 24/10/2026 · Tình trạng hoá chất phòng lab</p></div>
+   <div class="actions"><button class="btn primary" onclick="go('scan')">${I('scan')}Quét mã</button><button class="btn" onclick="go('lot')">${I('plus')}Nhập hoá chất</button><button class="btn" onclick="go('prep')">${I('flask')}Pha chế</button></div></div>
+  <section class="kpis">
+   ${kpi('Chai đang quản lý', 128, 'Sẵn sàng + đang dùng','box','info')}
+   ${kpi('Sắp hết hạn (≤ 30 ngày)', exp30, 'Chai và dung dịch pha','clock','warning')}
+   ${kpi('Quá hạn còn tồn', 1, 'Cần xử lý / huỷ bỏ','alert','danger')}
+   ${kpi('Dưới tồn tối thiểu', 3, 'Cần đặt thêm','layers','info')}
+  </section>
+  <section class="grid2">
+   <div class="card"><h2>Cần chú ý</h2><div class="list">${warn.map(w => `
+     <div class="it" style="cursor:pointer" onclick="open_('${w.c}')"><span class="dot ${w.tone}">${I(w.ic)}</span><div class="grow"><div class="t">${w.t}</div><div class="muted" style="font-size:12px"><span class="mono">${w.c}</span> · ${w.s}</div></div></div>`).join('')}</div></div>
+   <div class="card"><h2>Hoạt động gần đây</h2><div class="list">
+     ${[['TestUse','Phạm Văn D dùng 50 mL HCl 0,1 N cho biên bản BB-2026-0161','PC-26-00031','15:20 hôm qua','flask'],
+        ['Prep','Nguyễn Văn A pha NaOH 0,1 N (1.000 mL)','PC-26-00017','20/10 · 14:03','flask'],
+        ['Receive','Nhập 1 chai Kali hydro phtalat (chuẩn) — chờ kiểm','IN-26-00070','23/10 · 08:40','plus'],
+        ['Expired','Hệ thống đánh dấu hết hạn: Acid clohydric 37% AR','IN-26-00033','10/10 · 07:00','alert']]
+      .map(a => `<div class="it" style="cursor:pointer" onclick="open_('${a[2]}')"><span class="dot primary">${I(a[4])}</span><div class="grow"><div class="t" style="white-space:normal">${a[1]}</div><div class="muted" style="font-size:12px"><span class="mono">${a[2]}</span> · ${a[3]}</div></div></div>`).join('')}
+   </div></div>
+  </section>
+  <style>.dot.info{background:var(--info-tint);color:var(--info)}.dot.warning{background:var(--warning-tint);color:var(--warning)}.dot.danger{background:var(--danger-tint);color:var(--danger)}.dot.primary{background:var(--primary-tint);color:var(--primary-dark)}.ico.info{background:var(--info-tint);color:var(--info)}.ico.warning{background:var(--warning-tint);color:var(--warning)}.ico.danger{background:var(--danger-tint);color:var(--danger)}</style>`;
+};
+
+V.scan = () => `
+  <div class="page-head"><div><h1>Quét mã</h1><p class="muted" style="margin:0">Quét QR / mã vạch trên chai hoặc dung dịch để xem tồn, ghi nhận sử dụng, truy xuất</p></div></div>
+  <div class="grid2">
+   <div class="card"><div class="scanner"><div class="frame"><i></i><i></i><i></i><i></i><div class="line"></div></div><p>Đưa mã vào khung để quét (camera)</p></div></div>
+   <div class="stack">
+     <div class="card"><h2>Súng quét hoặc nhập tay</h2>
+       <div class="field"><label for="scanin">Mã hoá chất</label><input id="scanin" placeholder="Ví dụ PC-26-00031" autocomplete="off" onkeydown="if(event.key==='Enter')doScan()"><div class="hint">Súng quét USB/Bluetooth gõ mã rồi Enter — không cần bấm gì thêm. Hiểu cả mã trơn và link có <span class="mono">&amp;code=</span>.</div></div>
+       <div style="margin-top:12px"><button class="btn primary" onclick="doScan()">${I('search')}Tìm mã</button></div></div>
+     <div class="card"><h2>Vừa quét</h2><div class="chips">${['PC-26-00031','IN-26-00042','PC-26-00017','IN-26-00029'].map(c => `<button class="fchip" onclick="open_('${c}')">${c}</button>`).join('')}</div></div>
+   </div>
+  </div>`;
+AFTER.scan = () => document.getElementById('scanin')?.focus();
+function doScan(){
+  const raw = (document.getElementById('scanin')?.value || document.getElementById('quick').value || '').trim();
+  let c = raw.toLowerCase().includes('code=') ? raw.toLowerCase().split('code=').pop().split('&')[0] : raw;
+  c = c.toUpperCase().trim();
+  if (!/^(IN|PC)-\d{2}-\d{5}$/.test(c)) { toast('Mã không hợp lệ: ' + c.slice(0, 40)); return; }
+  open_(c);
+}
+
+V.inventory = () => `
+  <div class="page-head"><div><h1>Tồn kho</h1><p class="muted" style="margin:0">Theo dõi lượng còn lại, hạn dùng và vị trí</p></div>
+   <div class="actions"><button class="btn" onclick="go('lot')">${I('plus')}Nhập hoá chất</button></div></div>
+  <div class="tabs" role="tablist">
+   ${[['lot','Hoá chất đầu vào'],['prep','Dung dịch pha'],['agg','Gộp theo hoá chất']].map(([k,t]) => `<button role="tab" class="${state.tab===k?'on':''}" onclick="state.tab='${k}';go('inventory')">${t}</button>`).join('')}
+  </div>
+  <div class="toolbar"><div class="search">${I('search')}<input id="invq" value="${state.q}" placeholder="Tìm theo mã, tên, số lô…" oninput="state.q=this.value;invBody()" aria-label="Tìm kiếm"></div>
+   <div class="chips">${[['','Tất cả'],['InUse','Đang dùng'],['Available','Sẵn sàng'],['Quarantine','Chờ kiểm'],['Expired','Hết hạn'],['Empty','Đã hết']].map(([k,t]) => `<button class="fchip ${state.status===k?'on':''}" onclick="state.status='${k}';go('inventory')">${t}</button>`).join('')}</div></div>
+  <div class="tablewrap" id="invbody"></div>`;
+AFTER.inventory = () => invBody();
+function invBody(){
+  const q = state.q.trim().toLowerCase(); const el = document.getElementById('invbody'); if (!el) return;
+  el.classList.toggle('cards', state.tab !== 'agg');
+  if (state.tab === 'agg') {
+    const g = {}; LOTS.filter(l => l.status==='Available' || l.status==='InUse').forEach(l => { (g[l.name] = g[l.name] || {n:0,t:0,u:l.unit,min:l.name.includes('Methanol')?5000:0}); g[l.name].n++; g[l.name].t += l.rem; });
+    el.innerHTML = `<table><thead><tr><th>Hoá chất</th><th>Số chai</th><th>Tổng còn lại</th><th>Tối thiểu</th><th></th></tr></thead><tbody>${Object.entries(g).filter(([n]) => !q || n.toLowerCase().includes(q)).map(([n,v]) => `<tr><td><b>${n}</b></td><td>${v.n}</td><td>${num(v.t)} ${v.u}</td><td>${v.min?num(v.min)+' '+v.u:'—'}</td><td>${v.min && v.t < v.min ? '<span class="chip warning">Dưới tồn tối thiểu</span>' : ''}</td></tr>`).join('')}</tbody></table>`;
+    return;
+  }
+  const rows = (state.tab==='lot' ? LOTS : PREPS).filter(r => (!state.status || r.status===state.status) && (!q || (r.code+r.name+(r.lot||'')+(r.conc||'')).toLowerCase().includes(q)));
+  if (!rows.length) { el.innerHTML = `<div class="empty">${I('search')}<p>Không có kết quả phù hợp.</p></div>`; return; }
+  el.innerHTML = `<table><thead><tr><th>Mã</th><th>${state.tab==='lot'?'Hoá chất':'Dung dịch'}</th><th class="hide-m">${state.tab==='lot'?'Số lô NSX':'Nồng độ'}</th><th class="hide-m">Vị trí</th><th>Hạn dùng</th><th style="width:190px">Còn lại</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(r => `<tr onclick="open_('${r.code}')" tabindex="0" onkeydown="if(event.key==='Enter')open_('${r.code}')"><td class="mono">${r.code}</td><td><b>${r.name}</b></td><td class="hide-m">${r.lot||r.conc}</td><td class="hide-m">${r.loc}</td><td>${expiry(r.exp,r.status)}</td><td>${gauge(r.rem,r.init,r.unit)}</td><td>${badge(r.status)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+/* ---- drawer chi tiết ---- */
+let dtab = 'ledger';
+function drawer(o, tab){
+  dtab = tab || dtab;
+  const isLot = o.code.startsWith('IN-'); const el = document.getElementById('drawer');
+  const led = LEDGER[o.code] || [[fmt(o.recv||o.prep)+' 08:30', isLot?'Nhập kho':'Tạo dung dịch', '+'+num(o.init)+' '+o.unit, '', 'Nguyễn Văn A', o.init]];
+  const body = {
+   ledger: `<div class="timeline">${led.map(e => `<div class="ev"><span class="pt ${e[5]<0?'neg':''}"></span><div><b>${e[1]}</b>${e[3]?` · <span class="mono">${e[3]}</span>`:''}<div class="muted" style="font-size:12px">${e[0]} · ${e[4]}</div></div><b class="${e[5]<0?'neg-t':'pos-t'}">${e[2]}</b></div>`).join('')}</div>`,
+   recipe: (RECIPE[o.code] ? `<div class="list">${RECIPE[o.code].map(r => `<div class="it" style="cursor:pointer" onclick="open_('${r[0]}')"><div class="grow"><div class="t">${r[1]}</div><div class="muted" style="font-size:12px" ><span class="mono">${r[0]}</span></div></div><b>${r[2]}</b></div>`).join('')}</div>` : '<div class="empty">Chai đầu vào không có công thức.</div>'),
+   reports: (REPORTS[o.code] ? `<div class="list">${REPORTS[o.code].map(r => `<div class="it"><div class="grow"><div class="t">${r[0]}</div><div class="muted" style="font-size:12px">${r[1]} · ${r[2]}</div></div><b>${r[3]}</b></div>`).join('')}</div>` : '<div class="empty">Chưa gắn với biên bản nào.</div>')
+  }[dtab];
+  el.innerHTML = `
+   <div class="hd"><div><div class="mono" style="font-size:16px">${o.code}</div><div class="muted" style="font-size:12px">${isLot?'Hoá chất đầu vào':'Dung dịch pha'}</div></div>${badge(o.status)}<button class="x" onclick="closeDrawer()" aria-label="Đóng">${I('x')}</button></div>
+   <div class="bd">
+     <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px"><div class="qrbox">${qr(o.code)}</div><div style="flex:1;min-width:0"><div style="font-size:17px;font-weight:600">${o.name}</div><div class="muted">${isLot?'Lô '+o.lot+' · '+o.mfr:'Nồng độ '+o.conc}</div>
+       <div style="margin-top:12px"><div class="bigq">${num(o.rem)} <span style="font-size:14px" class="muted">/ ${num(o.init)} ${o.unit}</span></div>${gauge(o.rem,o.init,o.unit).replace(/<div class="qtext">.*<\/div>/,'')}</div></div></div>
+     <dl class="kv"><dt>Hạn dùng</dt><dd>${expiry(o.exp,o.status)}</dd><dt>Vị trí</dt><dd>${o.loc}</dd>${isLot?`<dt>Nhà cung cấp</dt><dd>${o.sup}</dd><dt>Ngày nhận</dt><dd>${fmt(o.recv)}</dd><dt>Số CAS</dt><dd>${o.cas}</dd>`:`<dt>Ngày pha</dt><dd>${fmt(o.prep)} · ${o.by}</dd><dt>Duyệt</dt><dd>${o.review==='Approved'?'<span class="chip success">Đã duyệt</span>':'<span class="chip warning">Chờ duyệt</span>'}</dd>`}</dl>
+     <div class="tabs" style="margin-top:20px">${[['ledger','Lịch sử'],...(isLot?[]:[['recipe','Công thức'],['reports','Biên bản']]),...(isLot?[['reports','Biên bản']]:[])].map(([k,t]) => `<button class="${dtab===k?'on':''}" onclick="drawer(find('${o.code}'),'${k}')">${t}</button>`).join('')}</div>
+     ${body}
+   </div>
+   <div class="ft"><button class="btn primary" onclick="toast('Mở màn Ghi nhận sử dụng (scrUsage) với ${o.code}')" ${['Expired','Empty','Disposed','Quarantine'].includes(o.status)?'disabled':''}>${I('check')}Ghi nhận sử dụng</button><button class="btn" onclick="go('trace','${o.code}')">${I('route')}Truy xuất</button><button class="btn" onclick="toast('Mở màn In nhãn (scrLabel)')">${I('print')}In nhãn</button></div>`;
+  document.getElementById('scrim').classList.add('on'); el.classList.add('on'); el.setAttribute('aria-hidden','false');
+}
+function closeDrawer(){ document.getElementById('scrim').classList.remove('on'); const d = document.getElementById('drawer'); d.classList.remove('on'); d.setAttribute('aria-hidden','true'); }
+
+/* ---- Nhập hoá chất ---- */
+const CAT = [['Natri hydroxit (NaOH) AR','g'],['Acid clohydric 37% AR','mL'],['Methanol HPLC','mL'],['Kali hydro phtalat (chuẩn)','g'],['Ống chuẩn pH 7.00','pcs']];
+const UNITS = {g:[['mg',.001],['g',1],['kg',1000]], mL:[['µL',.001],['mL',1],['L',1000]], pcs:[['pcs',1]]};
+V.lot = () => `
+  <div class="page-head"><div><h1>Đăng ký hoá chất đầu vào</h1><p class="muted" style="margin:0">Mỗi chai nhận một mã QR riêng — dán nhãn ngay sau khi lưu</p></div></div>
+  <div class="grid2 split-a">
+   <div class="stack">
+    <div class="card"><h2>1 · Hoá chất</h2><div class="row c21"><div class="field"><label for="chem">Hoá chất <span class="req">*</span></label><select id="chem" onchange="lotCalc()">${CAT.map((c,i) => `<option value="${i}">${c[0]}</option>`).join('')}</select><div class="hint">Gõ để tìm theo tên hoặc số CAS. Không thấy? Nhờ Admin thêm vào danh mục.</div></div>
+      <div class="field"><label>Đơn vị gốc</label><input id="base" disabled></div></div></div>
+    <div class="card"><h2>2 · Nguồn gốc</h2><div class="row c3">
+      <div class="field"><label for="mlot">Số lô NSX <span class="req">*</span></label><input id="mlot" value="1.06498.1000"></div>
+      <div class="field"><label for="mfr">Hãng sản xuất</label><input id="mfr" value="Merck"></div>
+      <div class="field"><label for="sup">Nhà cung cấp</label><input id="sup" value="Cty Hoá chất Á Châu"></div>
+      <div class="field"><label for="recv">Ngày nhận <span class="req">*</span></label><input id="recv" type="date" value="2026-10-24" oninput="lotCalc()"></div>
+      <div class="field"><label for="mfg">Ngày sản xuất</label><input id="mfg" type="date" value="2026-03-01"></div>
+      <div class="field" id="expf"><label for="expd">Hạn dùng <span class="req">*</span></label><input id="expd" type="date" value="2028-03-01" oninput="lotCalc()"><div class="err" id="experr"></div></div></div></div>
+    <div class="card"><h2>3 · Lượng và vị trí</h2><div class="row c3">
+      <div class="field"><label for="qty">Lượng mỗi chai <span class="req">*</span></label><div style="display:flex;gap:8px"><input id="qty" type="number" min="0" step="any" value="500" oninput="lotCalc()"><select id="unit" style="width:90px" onchange="lotCalc()"></select></div><div class="hint" id="qhint"></div></div>
+      <div class="field"><label for="n">Số chai <span class="req">*</span></label><input id="n" type="number" min="1" max="20" value="3" oninput="lotCalc()"><div class="hint">Tối đa 20 chai / lần</div></div>
+      <div class="field"><label for="loc">Vị trí</label><select id="loc"><option>P.205 · Tủ A · Ngăn 2</option><option>P.205 · Tủ hút</option><option>P.205 · Tủ chống cháy</option></select></div></div>
+      <div class="row c2" style="margin-top:12px"><div class="field"><label for="coa">Link COA</label><input id="coa" placeholder="https://…sharepoint.com/…/COA.pdf"></div><div class="field"><label for="note">Ghi chú</label><input id="note"></div></div></div>
+   </div>
+   <div class="stack sticky">
+    <div class="card" id="sum"></div>
+   </div>
+  </div>`;
+AFTER.lot = () => { lotCalc(); };
+function lotCalc(){
+  const c = CAT[document.getElementById('chem').value]; document.getElementById('base').value = c[1];
+  const us = document.getElementById('unit'); if (!us.dataset.b || us.dataset.b !== c[1]) { us.innerHTML = UNITS[c[1]].map(u => `<option ${u[1]===1?'selected':''}>${u[0]}</option>`).join(''); us.dataset.b = c[1]; }
+  const f = UNITS[c[1]].find(u => u[0] === us.value)[1]; const q = parseFloat(document.getElementById('qty').value) || 0; const n = Math.max(0, Math.min(20, parseInt(document.getElementById('n').value) || 0));
+  const base = q * f; document.getElementById('qhint').textContent = f !== 1 ? `= ${num(base)} ${c[1]} (lưu theo đơn vị gốc)` : '';
+  const ok = document.getElementById('expd').value > document.getElementById('recv').value && q > 0 && n >= 1;
+  document.getElementById('expf').classList.toggle('bad', document.getElementById('expd').value <= document.getElementById('recv').value);
+  document.getElementById('experr').textContent = document.getElementById('expd').value <= document.getElementById('recv').value ? 'Hạn dùng phải sau ngày nhận' : '';
+  document.getElementById('sum').innerHTML = `<h2>Tóm tắt</h2><dl class="kv"><dt>Hoá chất</dt><dd>${c[0]}</dd><dt>Số chai</dt><dd>${n}</dd><dt>Mỗi chai</dt><dd>${num(base)} ${c[1]}</dd><dt>Tổng</dt><dd>${num(base*n)} ${c[1]}</dd></dl>
+   <h3 style="margin-top:16px">Nhãn dán lên chai</h3>${label('IN-26-0xxxx', c[0], 'Lô '+document.getElementById('mlot').value+' · '+document.getElementById('mfr').value, 'HSD '+fmt(document.getElementById('expd').value||'2028-03-01'))}
+   <p class="muted" style="font-size:12px">Mã thật được cấp khi lưu; hình trên chỉ để xem bố cục.</p>
+   <button class="btn primary" style="width:100%;justify-content:center" ${ok?'':'disabled'} onclick="lotSave(${n},'${c[0]}')">${I('print')}Lưu và in nhãn</button>`;
+}
+function lotSave(n, name){
+  const base = 71; const codes = Array.from({length:n}, (_, i) => 'IN-26-' + String(base + i).padStart(5, '0'));
+  document.getElementById('sum').innerHTML = `<h2>${I('check')} Đã tạo ${n} chai</h2><p class="muted">Dán nhãn lên từng chai ngay bây giờ.</p><div class="labels">${codes.map(c => label(c, name, 'Lô '+document.getElementById('mlot').value, 'HSD '+fmt(document.getElementById('expd').value))).join('')}</div>
+   <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="toast('Print() — in ${n} nhãn')">${I('print')}In nhãn</button><button class="btn" onclick="go('lot')">Nhập tiếp</button></div>`;
+  toast('Đã tạo ' + n + ' chai: ' + codes[0] + (n > 1 ? ' … ' + codes[n-1] : ''));
+}
+
+/* ---- Pha chế ---- */
+const ING = [
+ {code:'IN-26-00042',name:'NaOH AR · lô 1.06498.1000',avail:412.5,unit:'g',exp:'2028-03-01',status:'InUse',qty:4,role:'Chất tan'},
+ {code:'IN-26-00057',name:'Nước cất 2 lần · lô WH-221907',avail:2500,unit:'mL',exp:'2027-09-30',status:'InUse',qty:950,role:'Dung môi'}
+];
+V.prep = () => `
+  <div class="page-head"><div><h1>Đăng ký pha chế</h1><p class="muted" style="margin:0">Ghi lại công thức thực tế — hệ thống tự trừ tồn các thành phần</p></div></div>
+  <div class="stepper">${['Thông tin dung dịch','Thành phần','Xác nhận'].map((t,i) => `<div class="step ${state.step===i+1?'on':''} ${state.step>i+1?'done':''}"><b>${state.step>i+1?'✓':i+1}</b><span>${t}</span></div>`).join('')}</div>
+  <div id="stepbody"></div>`;
+AFTER.prep = () => stepBody();
+function stepBody(){
+  const el = document.getElementById('stepbody'); if (!el) return;
+  if (state.step === 1) {
+    el.innerHTML = `<div class="card"><div class="row c3">
+      <div class="field" style="grid-column:span 2"><label>Tên dung dịch <span class="req">*</span></label><input value="NaOH 0,1 N"></div>
+      <div class="field"><label>Loại</label><select><option>Dung dịch làm việc</option><option>Dung dịch gốc</option><option>Dung dịch đệm</option></select></div>
+      <div class="field"><label>Nồng độ</label><input value="0,1 mol/L"></div>
+      <div class="field"><label>SOP / phương pháp</label><input value="SOP-QC-014"></div>
+      <div class="field"><label>Ngày pha</label><input type="date" value="2026-10-24"></div>
+      <div class="field"><label>Thể tích sau pha <span class="req">*</span></label><div style="display:flex;gap:8px"><input type="number" value="1000"><select style="width:80px"><option>mL</option><option>L</option></select></div></div>
+      <div class="field"><label>Vị trí</label><select><option>P.205 · Kệ B</option></select></div>
+      <div class="field"><label>Điều kiện bảo quản</label><select><option>15-25 °C (phòng)</option><option>2-8 °C</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Cách pha</label><textarea>Hoà tan 4,0 g NaOH trong khoảng 900 mL nước cất, để nguội, định mức đến 1.000 mL.</textarea></div></div></div>
+      <div class="actions" style="margin-top:16px;justify-content:flex-end"><button class="btn primary" onclick="state.step=2;go('prep')">Tiếp: Thành phần →</button></div>`;
+    return;
+  }
+  if (state.step === 2) {
+    el.innerHTML = `<div class="grid2 split-b">
+     <div class="card"><div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap"><div class="field" style="flex:1;min-width:200px"><input placeholder="Quét hoặc nhập mã chai / dung dịch… rồi Enter" aria-label="Thêm thành phần"></div><button class="btn">${I('scan')}Quét</button><button class="btn">${I('search')}Chọn từ tồn kho</button></div>
+      <div id="ings"></div>
+      <div class="callout" style="margin-top:12px">${I('alert')}<div>Thử gõ <b>3000</b> vào ô lượng của nước cất: lỗi vượt tồn hiện ngay tại dòng, trước khi gửi lên máy chủ.</div></div></div>
+     <div class="card" id="ingsum"></div></div>
+     <div class="actions" style="margin-top:16px;justify-content:space-between"><button class="btn" onclick="state.step=1;go('prep')">← Quay lại</button><button class="btn primary" id="next2" onclick="state.step=3;go('prep')">Tiếp: Xác nhận →</button></div>`;
+    ingRender(); return;
+  }
+  const minExp = ING.map(i => i.exp).sort()[0];
+  el.innerHTML = `<div class="grid2 split-c"><div class="card"><h2>Công thức</h2>
+    <div class="list">${ING.map(i => `<div class="it"><div class="grow"><div class="t">${i.name}</div><div class="muted" style="font-size:12px"><span class="mono">${i.code}</span> · ${i.role}</div></div><b>${num(i.qty)} ${i.unit}</b></div>`).join('')}</div>
+    <div class="callout" style="margin-top:12px">${I('check')}<div>Hạn dùng dung dịch (20/11/2026) không vượt hạn dùng sớm nhất của thành phần (${fmt(minExp)}).</div></div></div>
+    <div class="card"><h2>NaOH 0,1 N</h2><dl class="kv"><dt>Thể tích</dt><dd>1.000 mL</dd><dt>Ngày pha</dt><dd>24/10/2026</dd><dt>Hạn dùng</dt><dd>20/11/2026</dd><dt>Người pha</dt><dd>Nguyễn Văn A</dd></dl>
+    <h3 style="margin-top:16px">Nhãn</h3>${label('PC-26-0xxxx','NaOH 0,1 N','Pha 24/10/2026 · Nguyễn Văn A','HSD 20/11/2026')}
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="toast('Đã tạo PC-26-00032 · trừ tồn 2 thành phần · chờ duyệt')">${I('print')}Lưu và in nhãn</button></div></div>
+    <div class="actions" style="margin-top:16px"><button class="btn" onclick="state.step=2;go('prep')">← Quay lại</button></div>`;
+}
+function ingRender(){
+  document.getElementById('ings').innerHTML = ING.map((i, k) => {
+    const bad = i.qty <= 0 || i.qty > i.avail; const msg = i.qty <= 0 ? 'Nhập lượng' : (i.qty > i.avail ? `Vượt lượng còn lại (${num(i.avail)} ${i.unit})` : '');
+    return `<div class="ing ${bad?'bad':''}"><div><b>${i.name}</b><div class="muted" style="font-size:12px"><span class="mono">${i.code}</span> · HSD ${fmt(i.exp)}</div></div>
+      <div><div class="muted" style="font-size:12px">Còn lại</div><b>${num(i.avail)} ${i.unit}</b></div>
+      <div><div class="qty"><input type="number" min="0" step="any" value="${i.qty}" aria-label="Lượng dùng ${i.name}" oninput="ING[${k}].qty=parseFloat(this.value)||0;ingCheck()"><select aria-label="Đơn vị"><option>${i.unit}</option></select></div><div class="e" id="e${k}">${msg}</div></div>
+      <div><select style="height:36px;width:100%;border:1px solid #C9D1DB;border-radius:8px;padding:0 6px" aria-label="Vai trò"><option>${i.role}</option><option>Chất tan</option><option>Dung môi</option><option>Phụ gia</option></select></div></div>`;
+  }).join('');
+  ingCheck();
+}
+function ingCheck(){
+  let allOk = true;
+  ING.forEach((i, k) => { const bad = i.qty <= 0 || i.qty > i.avail; if (bad) allOk = false; const e = document.getElementById('e' + k); if (e) { e.textContent = i.qty <= 0 ? 'Nhập lượng' : (i.qty > i.avail ? `Vượt lượng còn lại (${num(i.avail)} ${i.unit})` : ''); e.closest('.ing').classList.toggle('bad', bad); } });
+  const minExp = ING.map(i => i.exp).sort()[0];
+  document.getElementById('ingsum').innerHTML = `<h2>Kiểm tra</h2><dl class="kv"><dt>Thành phần</dt><dd>${ING.length}</dd><dt>Hạn dùng tối đa</dt><dd>${fmt(minExp)}</dd><dt>Trạng thái</dt><dd>${allOk?'<span class="chip success">Hợp lệ</span>':'<span class="chip danger">Có lỗi cần sửa</span>'}</dd></dl>`;
+  const nb = document.getElementById('next2'); if (nb) nb.disabled = !allOk;
+}
+
+/* ---- Truy xuất ---- */
+V.trace = code => {
+  const c = code || 'PC-26-00031';
+  return `
+  <div class="page-head"><div><h1>Truy xuất</h1><p class="muted" style="margin:0">Từ mã hoá chất pha → nguồn gốc và các biên bản thử nghiệm đã dùng</p></div></div>
+  <div class="card" style="margin-bottom:16px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="field" style="flex:1;min-width:240px"><input id="tq" value="${c}" aria-label="Mã cần truy xuất" onkeydown="if(event.key==='Enter')go('trace',this.value.trim().toUpperCase())"></div><button class="btn primary" onclick="go('trace',document.getElementById('tq').value.trim().toUpperCase())">${I('route')}Truy xuất</button><button class="btn">${I('scan')}Quét</button>
+   <span class="muted" style="font-size:12px">Ví dụ:</span><button class="fchip" onclick="go('trace','PC-26-00031')">PC-26-00031</button><button class="fchip" onclick="go('trace','IN-26-00029')">IN-26-00029</button></div></div>
+  ${traceBody(c)}`;
+};
+function traceBody(c){
+  const t = TRACE[c];
+  if (!t) return `<div class="card empty">${I('search')}<p>Chưa có dữ liệu truy xuất mẫu cho <b>${c}</b>. Thử <b>PC-26-00031</b> hoặc <b>IN-26-00029</b>.</p></div>`;
+  const node = (n, root) => `<li><div class="node"><div class="nodecard ${root?'root':''}"><span class="dot ${n.code.startsWith('PC')?'primary':'info'}">${I(n.code.startsWith('PC')?'flask':'beaker')}</span><div><div class="t">${n.name}</div><div class="muted" style="font-size:12px"><span class="mono">${n.code}</span></div></div><div class="q"><b>${n.q}</b></div></div></div>${n.kids.length?`<ul>${n.kids.map(k => node(k)).join('')}</ul>`:''}</li>`;
+  const isLot = t.kind === 'Lot';
+  return `<div class="grid2 split-d">
+   <div class="card"><div style="display:flex;gap:16px;align-items:center;margin-bottom:16px"><div class="qrbox" style="width:96px;height:96px">${qr(c)}</div><div><div class="mono">${c}</div><div style="font-size:17px;font-weight:600">${t.title}</div><div class="muted" style="font-size:13px">${t.meta}</div></div></div>
+     <h3>${isLot ? 'Được dùng để pha (truy xuôi)' : 'Nguồn gốc (truy ngược)'}</h3><ul class="tree">${node(t.tree, true)}</ul>
+     <p class="muted" style="font-size:12px;margin-bottom:0">Hiển thị tối đa 3 cấp pha.</p></div>
+   <div class="card"><h2>Biên bản thử nghiệm (${t.reports.length})</h2><div class="list">${t.reports.map(r => `<div class="it"><span class="dot primary">${I('check')}</span><div class="grow"><div class="t">${r[0]}</div><div class="muted" style="font-size:12px">${r[1]} · ${r[2]} · ${r[4]}${r[5]?` · qua <span class="mono">${r[5]}</span>`:''}</div></div><b>${r[3]}</b><button class="btn sm" onclick="toast('Launch(ReportUrl) — chỉ https')" aria-label="Mở biên bản ${r[0]}">${I('link')}Mở</button></div>`).join('')}</div>
+    <div style="margin-top:16px"><button class="btn" onclick="toast('Xuất báo cáo truy xuất (giai đoạn 2)')">${I('down')}Xuất báo cáo</button></div></div>
+  </div>`;
+}
+
+V.admin = () => `
+  <div class="page-head"><div><h1>Quản trị</h1><p class="muted" style="margin:0">Chỉ Admin — danh mục, vị trí, cấu hình, vai trò, nhật ký</p></div></div>
+  <div class="tabs">${['Danh mục hoá chất','Vị trí','Cấu hình','Vai trò','Nhật ký'].map((t,i) => `<button class="${i===0?'on':''}">${t}</button>`).join('')}</div>
+  <div class="tablewrap"><table><thead><tr><th>Tên hoá chất</th><th>CAS</th><th>Đơn vị gốc</th><th>Tồn tối thiểu</th><th>Nguy hiểm</th><th>Trạng thái</th></tr></thead><tbody>
+   ${[['Natri hydroxit (NaOH) AR','1310-73-2','g','500','Ăn mòn'],['Acid clohydric 37% AR','7647-01-0','mL','1.000','Ăn mòn'],['Methanol HPLC','67-56-1','mL','5.000','Dễ cháy · Độc cấp tính'],['Acetonitrile LC-MS','75-05-8','mL','1.000','Dễ cháy']].map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="badge success">Đang dùng</span></td></tr>`).join('')}
+  </tbody></table></div>
+  <p class="muted" style="font-size:12px">Không có nút xoá — chỉ “Ngừng sử dụng”. Mọi thay đổi được ghi nhật ký.</p>`;
+
+/* ============ khởi động ============ */
+document.getElementById('logo').innerHTML = I('beaker');
+document.getElementById('qico').innerHTML = I('search');
+document.getElementById('quick').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const v = e.target.value; e.target.value = ''; go('scan');
+  const s = document.getElementById('scanin'); if (s) { s.value = v; doScan(); }
+});
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+// #inventory  hoặc  #inventory:IN-26-00042 (mở thẳng chi tiết)
+const [hv, hc] = (location.hash || '').replace('#', '').split(':');
+go(V[hv] ? hv : 'home'); if (hc) open_(hc);
+</script>
+</body>
+</html>

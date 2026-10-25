@@ -145,7 +145,7 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
   <h1>LabChem — Quản lý hoá chất phòng lab</h1>
   <p>Tổng quan thiết kế, viết để đọc trong khoảng 10 phút. Phần chi tiết kỹ thuật nằm ở các tài liệu bên dưới (mở ra khi cần).</p>
   <div class="chips"><span class="chip">SharePoint Lists</span><span class="chip">Power Apps</span><span class="chip">Power Automate</span><span class="chip">Máy quét Zebra · QR · mã vạch</span></div>
-  <div class="banner"><div><b>Trạng thái:</b> đã thiết kế, dựng mockup giao diện và kiểm tra script dữ liệu. <b>Chưa chạy trên Power Apps / Power Automate thật</b> (chưa có môi trường). Cập nhật: 24/10/2026.</div></div>
+  <div class="banner"><div><b>Trạng thái:</b> đã thiết kế, dựng mockup giao diện và kiểm tra script dữ liệu. <b>Chưa chạy trên Power Apps / Power Automate thật</b> (chưa có môi trường). Cập nhật: 25/10/2026.</div></div>
 </div></header>
 
 <div class="jump"><select id="jump" aria-label="Chuyển đến mục"><option value="">Mục lục…</option></select></div>
@@ -165,8 +165,9 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
     <a href="#rui-ro"><b>10</b> Rủi ro và hạn chế chính</a>
     <a href="#cau-hoi"><b>11</b> Câu hỏi cần anh trả lời</a>
     <a href="#kiem-thu"><b>12</b> Kiểm thử và nghiệm thu</a>
-    <a href="#lo-trinh"><b>13</b> Lộ trình triển khai</a>
-    <a href="#trang-thai"><b>14</b> Đã kiểm tra gì, chưa kiểm tra gì</a>
+    <a href="#goi-y"><b>13</b> Gợi ý mở rộng</a>
+    <a href="#lo-trinh"><b>14</b> Lộ trình triển khai</a>
+    <a href="#trang-thai"><b>15</b> Đã kiểm tra gì, chưa kiểm tra gì</a>
     <h4>Tài liệu chi tiết</h4>
     <a href="#doc-01"><b>01</b> Thiết kế tổng thể</a>
     <a href="#doc-02"><b>02</b> Mô hình dữ liệu</a>
@@ -366,6 +367,8 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
     <li><b>Đơn vị</b> khác (mol, %, đương lượng) hoặc hàng đếm theo cái?</li>
     <li>Cần <b>ảnh cảnh báo nguy hiểm (GHS)</b> trên nhãn và kiểm soát hoá chất đặc biệt không?</li>
     <li><b>Ngôn ngữ:</b> chỉ tiếng Việt hay song ngữ?</li>
+    <li><b>Hạn dùng sau khi mở nắp:</b> hoá chất/dung môi nào có hạn ngắn hơn và có cần quản lý riêng không? (mục 13, G2)</li>
+    <li><b>Quy mô kho hiện tại:</b> khoảng bao nhiêu chai đang có? (mục 13, G3)</li>
   </ol>
 </section>
 
@@ -386,8 +389,36 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
   </table></div>
 </section>
 
+<section id="goi-y">
+  <h2><span class="num">13</span>Gợi ý mở rộng</h2>
+  <p>Các gợi ý dưới đây là <b>đề xuất để anh chọn</b>, chưa nằm trong thiết kế chính. Ba mục đầu là <b>chỗ thiếu của thiết kế hiện tại</b>.</p>
+  <h3>Nên đưa vào giai đoạn 1</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Gợi ý</th><th>Vì sao</th><th>Công sức</th></tr></thead>
+    <tbody>
+      <tr><td>G1</td><td><b>Chuyển vị trí chai</b> (quét chai rồi quét QR tủ/kệ)</td><td>Vị trí hiện chỉ ghi lúc nhập; chai chuyển tủ thì dữ liệu sai và người dùng ngừng tin app.</td><td>Nhỏ–Vừa</td></tr>
+      <tr><td>G2</td><td><b>Hạn dùng sau khi mở nắp</b></td><td>Nhiều hoá chất, dung môi chỉ dùng được 6–12 tháng sau khi mở, dù hạn in trên chai còn dài.</td><td>Vừa</td></tr>
+      <tr><td>G3</td><td><b>Nạp tồn đầu kỳ từ Excel</b> và kế hoạch dán nhãn chai đang có</td><td>Kho đã có sẵn hàng trăm chai chưa có mã; dự án kiểu này hay thất bại ở bước này.</td><td>Vừa</td></tr>
+      <tr><td>G4</td><td><b>Màn kết quả quét to, đỏ/xanh</b></td><td>Quét chai hết hạn, chờ kiểm hay bị từ chối phải hiện "KHÔNG DÙNG" kèm lý do. Tính năng an toàn rẻ nhất.</td><td>Nhỏ</td></tr>
+      <tr><td>G5</td><td><b>Gợi ý chai hết hạn sớm nhất trước</b> (FEFO)</td><td>Giảm hoá chất bị bỏ phí do hết hạn.</td><td>Nhỏ</td></tr>
+      <tr><td>G6</td><td><b>Kiểm kê định kỳ bằng máy quét</b></td><td>Rủi ro lớn nhất của theo dõi lượng còn lại là người dùng quên ghi; kiểm kê đối chiếu và sửa số.</td><td>Lớn</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Nên làm ngay sau đó</h3>
+  <ul>
+    <li><b>G7 · Công thức mẫu khi pha</b> (ví dụ NaOH 0,1 N): chọn công thức và thể tích, app điền sẵn thành phần theo tỷ lệ, người dùng quét chai thật vào từng dòng.</li>
+    <li><b>G8 · Nút "Tạo đề nghị mua"</b> từ cảnh báo sắp hết, để khép vòng "chuẩn bị mua thêm".</li>
+    <li><b>G9 · Xuất hồ sơ truy xuất ra PDF</b> (đưa lên sớm hơn giai đoạn 2): đánh giá viên thường muốn xem hồ sơ này.</li>
+    <li><b>G10 · Chia chai</b> (rót dung môi sang chai nhỏ, mỗi chai nhỏ có nhãn riêng), dùng lại luồng pha chế.</li>
+  </ul>
+  <h3>Để sau, tuỳ nhu cầu</h3>
+  <p>Ảnh cảnh báo nguy hiểm (GHS) và cảnh báo hoá chất không tương thích cùng tủ · dự báo "đủ dùng bao nhiêu tuần" · giá và thống kê chi phí · hàng đợi "chờ gửi" khi mất mạng.</p>
+  <div class="callout key"><b>Em khuyên:</b> chọn <b>G1–G6</b> cho giai đoạn 1 thay vì làm hết. Mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên <b>một tủ thí điểm</b> có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn. Chi tiết thay đổi dữ liệu, flow, màn hình cho từng mục ở tài liệu 01, mục 8.</div>
+  <div class="callout ask"><b>Em cần anh quyết:</b> (1) hoá chất nào có hạn dùng ngắn hơn sau khi mở nắp và có cần quản lý riêng không; (2) kho hiện có khoảng bao nhiêu chai (quyết định công sức nạp tồn đầu kỳ và dán nhãn).</div>
+</section>
+
 <section id="lo-trinh">
-  <h2><span class="num">13</span>Lộ trình triển khai</h2>
+  <h2><span class="num">14</span>Lộ trình triển khai</h2>
   <ol class="timeline">
     <li><b>Chốt câu hỏi mở</b> (mục 11), xin môi trường, tài khoản dịch vụ, nhóm bảo mật.</li>
     <li><b>Dựng dữ liệu:</b> chạy script tạo 10 list, nạp danh mục, vị trí, vai trò, tách quyền.</li>
@@ -399,7 +430,7 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
 </section>
 
 <section id="trang-thai">
-  <h2><span class="num">14</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
+  <h2><span class="num">15</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
   <div class="tw"><table>
     <thead><tr><th>Hạng mục</th><th>Trạng thái</th></tr></thead>
     <tbody>
@@ -417,6 +448,7 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
     <details class="doc" id="doc-01"><summary><span class="docno">01</span>Thiết kế tổng thể</summary><div class="md"><h2 id="d01-1-muc-tieu-va-pham-vi">1. Mục tiêu và phạm vi</h2>
 <p>Ứng dụng giúp người làm trong phòng lab <strong>đăng ký, theo dõi và truy xuất hoá chất</strong> thay cho sổ tay/Excel. Dữ liệu nằm trong SharePoint Lists, giao diện bằng Power Apps (Canvas), nghiệp vụ và kiểm soát chạy bằng Power Automate.</p>
 <p><strong>Trong phạm vi giai đoạn 1 (đã thiết kế):</strong> 5 yêu cầu anh nêu + các thành phần bắt buộc để chúng hoạt động đáng tin cậy (phân quyền, sổ cái, nhật ký kiểm toán, cảnh báo hạn dùng và sắp hết theo %, in nhãn có QR + mã vạch).</p>
+<p><strong>Gợi ý mở rộng</strong> (chuyển vị trí, hạn sau mở nắp, nạp tồn đầu kỳ, kiểm kê…): xem mục 8 ở cuối tài liệu này.</p>
 <p><strong>Chưa làm (giai đoạn 2):</strong> duyệt nhập kho bằng Approvals, thông báo qua Teams, PDF nhãn tự động, xuất báo cáo truy xuất PDF/Excel, upload COA từ app, mã vạch 1D, ảnh GHS trên nhãn, quản lý chất đặc biệt, đặt hàng/mua sắm.</p>
 <h2 id="d01-2-yeu-cau-tinh-nang">2. Yêu cầu → tính năng</h2>
 <div class="tw"><table>
@@ -706,6 +738,146 @@ footer{max-width:1180px;margin:0 auto;padding:8px 24px 40px;color:var(--muted);f
 </tr>
 </tbody></table></div>
 <p>Thứ tự này đưa người dùng vào dùng được sớm nhất ở giai đoạn 3 (nhập, quét, xem tồn) rồi mới thêm pha chế và truy xuất.</p>
+<h2 id="d01-8-goi-y-mo-rong-de-xuat-chua-dua-vao-schema-flow-va-app">8. Gợi ý mở rộng (đề xuất — chưa đưa vào schema, flow và app)</h2>
+<blockquote>
+<p>Các mục dưới đây là <strong>đề xuất để anh chọn</strong>. Chưa mục nào nằm trong <a href="#doc-02">02</a>, <a href="#doc-03">03</a>, <a href="#doc-04">04</a> hay trong bộ 65 ca kiểm thử. Anh chọn mục nào thì em cập nhật cột, flow, màn hình và ca kiểm thử theo mục đó (dự kiến mỗi mục thêm khoảng 3–5 ca kiểm thử). Công sức ước lượng theo thang <strong>Nhỏ</strong> (chủ yếu giao diện) · <strong>Vừa</strong> (vài cột và một flow hoặc một màn hình mới) · <strong>Lớn</strong> (nhiều list, flow và màn hình).</p>
+</blockquote>
+<h3 id="d01-8-1-nen-dua-vao-giai-doan-1">8.1 Nên đưa vào giai đoạn 1</h3>
+<p>Ba mục đầu (G1–G3) là <strong>chỗ thiếu của thiết kế hiện tại</strong>, không chỉ là tính năng thêm.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Gợi ý</th>
+<th>Vì sao</th>
+<th>Công sức</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G1</td>
+<td><strong>Chuyển vị trí chai</strong> bằng cách quét chai rồi quét QR của tủ/kệ</td>
+<td>Vị trí hiện chỉ được ghi lúc nhập. Chai chuyển tủ thì dữ liệu sai và người dùng sẽ ngừng tin app.</td>
+<td>Nhỏ–Vừa</td>
+</tr>
+<tr>
+<td>G2</td>
+<td><strong>Hạn dùng sau khi mở nắp</strong></td>
+<td>Nhiều hoá chất và dung môi chỉ dùng được 6–12 tháng sau khi mở, dù hạn in trên chai còn dài. App hiện chỉ biết hạn in trên chai.</td>
+<td>Vừa</td>
+</tr>
+<tr>
+<td>G3</td>
+<td><strong>Nạp tồn đầu kỳ từ Excel</strong> và kế hoạch dán nhãn chai đang có</td>
+<td>Dự án kiểu này hay thất bại ở đây: kho đã có sẵn hàng trăm chai chưa có mã.</td>
+<td>Vừa</td>
+</tr>
+<tr>
+<td>G4</td>
+<td><strong>Màn kết quả quét to, đỏ/xanh</strong></td>
+<td>Quét một chai hết hạn, đang chờ kiểm hay dung dịch bị từ chối thì phải hiện chữ &quot;KHÔNG DÙNG&quot; kèm lý do, không chỉ một badge nhỏ. Đây là tính năng an toàn rẻ nhất.</td>
+<td>Nhỏ</td>
+</tr>
+<tr>
+<td>G5</td>
+<td><strong>Gợi ý chai hết hạn sớm nhất trước</strong> (FEFO)</td>
+<td>Khi chọn chai để pha hoặc dùng, app xếp chai sắp hết hạn lên đầu, giảm hoá chất bị bỏ phí.</td>
+<td>Nhỏ</td>
+</tr>
+<tr>
+<td>G6</td>
+<td><strong>Kiểm kê định kỳ bằng máy quét</strong></td>
+<td>Rủi ro lớn nhất của việc theo dõi lượng còn lại là người dùng quên ghi. Kiểm kê quét từng chai trong tủ để đối chiếu và sửa số.</td>
+<td>Lớn</td>
+</tr>
+</tbody></table></div>
+<h3 id="d01-8-2-chi-tiet-thay-doi-du-kien-cho-g1-g6">8.2 Chi tiết thay đổi dự kiến cho G1–G6</h3>
+<p><strong>G1 — Chuyển vị trí chai (<code>Move</code>)</strong></p>
+<ul>
+<li><strong>Dữ liệu:</strong> <code>LabLocations</code> thêm mã vị trí <code>LC-nnnnn</code> (lấy từ <code>ID</code>, cùng quy ước với các mã khác) để in QR dán lên tủ/kệ. Bộ nhận dạng mã ở màn Quét mở rộng thêm mẫu <code>LC-\d{5}</code>.</li>
+<li><strong>Flow:</strong> <code>LAB-F04</code> thêm action <code>Move</code> với payload <code>{itemType, itemId, locationId}</code>; vai trò <strong>Admin và Analyst</strong>; kiểm tra vị trí còn <code>IsActive</code>; cập nhật <code>LocationID</code>/<code>LocationName</code>; ghi <code>LabAudit</code> kèm vị trí cũ và mới. Không đổi số lượng nên không đụng sổ cái.</li>
+<li><strong>App:</strong> nút &quot;Chuyển vị trí&quot; ở <code>scrDetail</code>: quét chai, rồi quét QR vị trí đích (hoặc chọn từ danh sách). <code>scrLabel</code> in được nhãn vị trí.</li>
+<li><strong>Kiểm thử:</strong> chuyển hợp lệ; vị trí ngừng dùng bị từ chối; Viewer bị từ chối; nhật ký có đủ vị trí cũ/mới.</li>
+</ul>
+<p><strong>G2 — Hạn dùng sau khi mở nắp</strong></p>
+<ul>
+<li><strong>Dữ liệu:</strong> <code>LabCatalog.ShelfLifeAfterOpenDays</code> (Number, để trống = không áp dụng); <code>LabLots.EffectiveExpiryDate</code> (Date, có index) do flow tính = sớm hơn giữa <code>ExpiryDate</code> và <code>OpenedDate</code> + số ngày.</li>
+<li><strong>Flow:</strong> <code>LAB-F04</code> thêm action <code>Open</code> để ghi <code>OpenedDate</code> <strong>ngay lúc mở nắp</strong>, không đợi lần dùng đầu tiên; <code>LAB-F01</code> và <code>LAB-C01</code> cũng gán <code>EffectiveExpiryDate</code>. BR-03, BR-05, <code>LAB-S01</code> và cảnh báo hết hạn đổi sang dùng <code>EffectiveExpiryDate</code> thay cho <code>ExpiryDate</code>.</li>
+<li><strong>App:</strong> nút &quot;Đánh dấu đã mở&quot; ở chi tiết chai; màu hạn dùng tính theo hạn hiệu lực; nhãn nhỏ &quot;Mở ngày … · dùng đến …&quot;.</li>
+<li><strong>Kiểm thử:</strong> chai hạn in 2028, mở ngày X, quy định 180 ngày → bị chặn sau X + 180 ngày; hạn dung dịch pha bị giới hạn theo hạn hiệu lực của thành phần.</li>
+</ul>
+<p><strong>G3 — Nạp tồn đầu kỳ từ Excel</strong></p>
+<ul>
+<li><strong>Dữ liệu:</strong> tệp Excel mẫu (dạng Table) gồm: hoá chất (khớp danh mục), số lô, hạn dùng, lượng ban đầu, lượng hiện còn, vị trí, ngày nhận (tuỳ chọn).</li>
+<li><strong>Flow:</strong> <code>LAB-F05 ImportOpeningStock</code>, <strong>chỉ Admin</strong>, hai bước. <em>Kiểm tra</em>: đọc bảng Excel trong thư viện <code>LabImport</code>, kiểm từng dòng (khớp danh mục, đơn vị, hạn dùng, <code>còn ≤ ban đầu</code>) và trả danh sách lỗi kèm số dòng. <em>Nhập</em>: chỉ chạy khi không còn lỗi; tạo chai và ghi sổ cái <code>Receive</code> +ban đầu rồi <code>Adjust</code> −(ban đầu − hiện còn) với lý do &quot;Tồn đầu kỳ&quot;, để tổng sổ cái đúng bằng lượng hiện còn. Trả tệp kết quả có mã từng chai để in nhãn hàng loạt. <code>RequestId</code> theo tệp + số dòng nên chạy lại không tạo trùng.</li>
+<li><strong>Triển khai:</strong> thí điểm <strong>một tủ</strong> trước; dán nhãn xong, quét xác nhận từng chai (dùng chức năng kiểm kê G6 nếu đã làm); rồi mở rộng.</li>
+<li><strong>Kiểm thử:</strong> dòng sai được báo kèm số dòng và lý do; không nhập khi còn lỗi; chạy lại cùng tệp không tạo trùng.</li>
+</ul>
+<p><strong>G4 — Màn kết quả quét to, đỏ/xanh</strong></p>
+<ul>
+<li><strong>App:</strong> dải trạng thái trên cùng <code>scrDetail</code> có ba mức: xanh &quot;Dùng được&quot;; vàng &quot;Dùng được — lưu ý&quot; (sắp hết hạn, còn ít); đỏ &quot;KHÔNG DÙNG&quot; kèm lý do (hết hạn, đang chờ kiểm, dung dịch bị từ chối duyệt, đã hết, đã huỷ/vô hiệu). Tính từ cùng quy tắc BR-03; nút &quot;Ghi nhận sử dụng&quot; bị khoá khi đỏ.</li>
+<li><strong>Dữ liệu, flow:</strong> không đổi. <strong>Kiểm thử:</strong> mỗi lý do hiển thị đúng; nút bị khoá khi đỏ.</li>
+</ul>
+<p><strong>G5 — Gợi ý chai hết hạn sớm nhất trước (FEFO)</strong></p>
+<ul>
+<li><strong>App:</strong> danh sách chọn chai (thêm thành phần, ghi nhận sử dụng) sắp theo hạn hiệu lực sớm nhất trước và đánh dấu &quot;Dùng trước&quot;; chọn chai khác của cùng hoá chất thì hiện cảnh báo mềm &quot;IN-… hết hạn sớm hơn&quot; (không chặn).</li>
+<li><strong>Dữ liệu, flow:</strong> không đổi.</li>
+</ul>
+<p><strong>G6 — Kiểm kê bằng máy quét</strong></p>
+<ul>
+<li><strong>Dữ liệu:</strong> <code>LabStocktake</code> (phiên kiểm kê: mã <code>KK-yy-nnnnn</code>, vị trí, trạng thái Open/Closed, người mở/đóng) và <code>LabStocktakeLines</code> (phiên, chai/dung dịch, lượng dự kiến, lượng đếm, chênh lệch, ghi chú).</li>
+<li><strong>Flow:</strong> <code>LAB-F06 Stocktake</code> ba bước. <em>Start</em>: chọn vị trí, chụp danh sách dự kiến từ sổ cái. <em>Scan</em>: ghi từng dòng; chai quét được nhưng đang ghi ở vị trí khác thì đề nghị <code>Move</code> (G1). <em>Close</em>: liệt kê chai không tìm thấy; chênh lệch số lượng chuyển Admin duyệt, duyệt xong mới ghi <code>Adjust</code> qua <code>LAB-C01</code> với lý do &quot;Kiểm kê KK-…&quot;. <strong>Không tự huỷ</strong> chai không tìm thấy.</li>
+<li><strong>App:</strong> <code>scrStocktake</code>: chọn vị trí rồi quét liên tục bằng máy Zebra; bộ đếm &quot;đã quét x / dự kiến y&quot; và danh sách còn thiếu; chai còn nguyên bấm &quot;Không đổi&quot;, chai đã dùng một phần nhập lượng ước tính.</li>
+<li><strong>Kiểm thử:</strong> chai thiếu được liệt kê, không bị tự huỷ; chênh lệch cần Admin duyệt mới đổi tồn; bất biến sổ cái giữ nguyên.</li>
+</ul>
+<h3 id="d01-8-3-nen-lam-ngay-sau-do">8.3 Nên làm ngay sau đó</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Gợi ý</th>
+<th>Thay đổi dự kiến</th>
+<th>Công sức</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G7</td>
+<td><strong>Công thức mẫu khi pha</strong> (ví dụ &quot;NaOH 0,1 N&quot;)</td>
+<td><code>LabRecipes</code> (tên, SOP, lượng chuẩn, số ngày hạn dùng của dung dịch) và <code>LabRecipeItems</code> (hoá chất theo danh mục, lượng trên đơn vị chuẩn, vai trò). Khi pha: chọn công thức và thể tích, app điền sẵn các dòng thành phần theo tỷ lệ; người dùng quét chai thật vào từng dòng và app kiểm chai thuộc đúng hoá chất của dòng. Hạn dùng gợi ý = ngày pha + số ngày của công thức, vẫn bị giới hạn bởi BR-05.</td>
+<td>Vừa–Lớn</td>
+</tr>
+<tr>
+<td>G8</td>
+<td><strong>Nút &quot;Tạo đề nghị mua&quot;</strong> từ cảnh báo sắp hết</td>
+<td><code>LabPurchaseRequests</code> (hoá chất, lượng gợi ý = tồn chuẩn − tổng tồn, trạng thái Nháp/Đã gửi/Đã đặt/Đã nhận, người đề nghị). Flow <code>LAB-F07</code> tạo bản ghi và gửi email (hoặc Approvals) cho người mua; khi <code>LAB-F01</code> nhập đúng hoá chất đó thì tự đổi sang &quot;Đã nhận&quot;. Khép vòng &quot;chuẩn bị mua thêm&quot;.</td>
+<td>Vừa</td>
+</tr>
+<tr>
+<td>G9</td>
+<td><strong>Xuất hồ sơ truy xuất ra PDF</strong> (đưa lên sớm hơn giai đoạn 2)</td>
+<td>Flow <code>LAB-F08</code> nhận mã <code>PC-…</code> hoặc <code>IN-…</code>, dựng trang HTML (thông tin, cây nguồn gốc, danh sách biên bản), đổi sang PDF bằng connector OneDrive/SharePoint (<strong>cần xác nhận connector và giấy phép</strong>), lưu vào thư viện <code>LabReports</code> và trả link. Đánh giá viên (ví dụ ISO/IEC 17025) thường muốn xem hồ sơ này.</td>
+<td>Vừa</td>
+</tr>
+<tr>
+<td>G10</td>
+<td><strong>Chia chai</strong> (rót dung môi sang chai nhỏ)</td>
+<td>Dùng lại luồng pha chế với <code>PrepType = Chia chai</code>, một thành phần, lượng sau pha = lượng đã rót; hạn dùng tối đa bằng hạn hiệu lực của chai gốc; có lối tắt &quot;Chia chai&quot; điền sẵn. Mỗi chai nhỏ có nhãn riêng.</td>
+<td>Nhỏ</td>
+</tr>
+</tbody></table></div>
+<h3 id="d01-8-4-de-sau-tuy-nhu-cau">8.4 Để sau, tuỳ nhu cầu</h3>
+<ul>
+<li><strong>Cảnh báo nguy hiểm và tương thích:</strong> hiện ảnh GHS và link SDS khi quét; bảng quy tắc <code>LabCompat</code> (cặp loại nguy hiểm không để chung tủ) để cảnh báo khi nhập hoặc chuyển vị trí.</li>
+<li><strong>Dự báo &quot;đủ dùng khoảng bao nhiêu tuần&quot;:</strong> <code>LAB-S01</code> tính mức tiêu thụ trung bình 90 ngày từ sổ cái và lưu vào danh mục; bổ sung cho cảnh báo theo %.</li>
+<li><strong>Giá và thống kê chi phí:</strong> <code>UnitPrice</code> ở danh mục hoặc lô; báo cáo tiêu thụ theo tháng.</li>
+<li><strong>Mất mạng:</strong> Power Apps hạn chế khi offline; thiết kế đã có <code>RequestId</code> để gửi lại không ghi trùng, có thể thêm hàng đợi &quot;chờ gửi&quot; nếu lab có sóng yếu.</li>
+</ul>
+<h3 id="d01-8-5-khuyen-nghi-pham-vi">8.5 Khuyến nghị phạm vi</h3>
+<p>Chọn <strong>G1–G6</strong> cho giai đoạn 1 thay vì làm hết: mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên <strong>một tủ thí điểm</strong> có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn.</p>
+<p>Hai điều cần anh quyết (cũng nằm trong <a href="#doc-05">05 §7</a>):</p>
+<ol>
+<li>Hoá chất nào ở lab có hạn dùng ngắn hơn sau khi mở nắp, và có cần quản lý riêng không (G2)?</li>
+<li>Kho hiện có khoảng bao nhiêu chai? Con số này quyết định công sức nạp tồn đầu kỳ và dán nhãn (G3).</li>
+</ol>
 </div></details>
 <details class="doc" id="doc-02"><summary><span class="docno">02</span>Mô hình dữ liệu</summary><div class="md"><blockquote>
 <p>Tài liệu này được <strong>sinh tự động</strong> từ <a href="sharepoint/LabChem.Schema.ps1">sharepoint/LabChem.Schema.ps1</a> — đó là nguồn sự thật duy nhất. Muốn đổi cột: sửa file schema, chạy lại script tạo list, chạy <code>./tools/Build-DataModelDoc.ps1</code> để sinh lại tài liệu. Đừng sửa tay các bảng bên dưới.</p>
@@ -4026,6 +4198,8 @@ Patch(LabCatalog, Defaults(LabCatalog), {
 <li>Có cần <strong>ảnh GHS/cảnh báo nguy hiểm</strong> trên nhãn, và <strong>kiểm soát chất thuộc diện đặc biệt</strong> (tiền chất, chất độc) không?</li>
 <li><strong>Ngôn ngữ</strong>: chỉ tiếng Việt hay song ngữ?</li>
 <li><strong>Cảnh báo sắp hết:</strong> mốc 100% lấy từ <em>lượng tồn chuẩn</em> của từng hoá chất (hoặc tồn cao nhất đã đạt) và ngưỡng mặc định 20% có hợp lý không? Hay anh muốn so với từng chai, hoặc dùng số lượng tuyệt đối?</li>
+<li><strong>Hạn dùng sau khi mở nắp</strong> (<a href="#doc-01">01 mục 8, G2</a>): hoá chất/dung môi nào có hạn ngắn hơn sau khi mở, và có cần quản lý riêng không?</li>
+<li><strong>Quy mô kho hiện tại:</strong> khoảng bao nhiêu chai đang có? (quyết định công sức nạp tồn đầu kỳ và dán nhãn — G3)</li>
 </ol>
 </div></details>
   </main>

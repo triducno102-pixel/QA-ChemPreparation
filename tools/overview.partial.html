@@ -188,6 +188,8 @@
     <li><b>Đơn vị</b> khác (mol, %, đương lượng) hoặc hàng đếm theo cái?</li>
     <li>Cần <b>ảnh cảnh báo nguy hiểm (GHS)</b> trên nhãn và kiểm soát hoá chất đặc biệt không?</li>
     <li><b>Ngôn ngữ:</b> chỉ tiếng Việt hay song ngữ?</li>
+    <li><b>Hạn dùng sau khi mở nắp:</b> hoá chất/dung môi nào có hạn ngắn hơn và có cần quản lý riêng không? (mục 13, G2)</li>
+    <li><b>Quy mô kho hiện tại:</b> khoảng bao nhiêu chai đang có? (mục 13, G3)</li>
   </ol>
 </section>
 
@@ -208,8 +210,36 @@
   </table></div>
 </section>
 
+<section id="goi-y">
+  <h2><span class="num">13</span>Gợi ý mở rộng</h2>
+  <p>Các gợi ý dưới đây là <b>đề xuất để anh chọn</b>, chưa nằm trong thiết kế chính. Ba mục đầu là <b>chỗ thiếu của thiết kế hiện tại</b>.</p>
+  <h3>Nên đưa vào giai đoạn 1</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Gợi ý</th><th>Vì sao</th><th>Công sức</th></tr></thead>
+    <tbody>
+      <tr><td>G1</td><td><b>Chuyển vị trí chai</b> (quét chai rồi quét QR tủ/kệ)</td><td>Vị trí hiện chỉ ghi lúc nhập; chai chuyển tủ thì dữ liệu sai và người dùng ngừng tin app.</td><td>Nhỏ–Vừa</td></tr>
+      <tr><td>G2</td><td><b>Hạn dùng sau khi mở nắp</b></td><td>Nhiều hoá chất, dung môi chỉ dùng được 6–12 tháng sau khi mở, dù hạn in trên chai còn dài.</td><td>Vừa</td></tr>
+      <tr><td>G3</td><td><b>Nạp tồn đầu kỳ từ Excel</b> và kế hoạch dán nhãn chai đang có</td><td>Kho đã có sẵn hàng trăm chai chưa có mã; dự án kiểu này hay thất bại ở bước này.</td><td>Vừa</td></tr>
+      <tr><td>G4</td><td><b>Màn kết quả quét to, đỏ/xanh</b></td><td>Quét chai hết hạn, chờ kiểm hay bị từ chối phải hiện "KHÔNG DÙNG" kèm lý do. Tính năng an toàn rẻ nhất.</td><td>Nhỏ</td></tr>
+      <tr><td>G5</td><td><b>Gợi ý chai hết hạn sớm nhất trước</b> (FEFO)</td><td>Giảm hoá chất bị bỏ phí do hết hạn.</td><td>Nhỏ</td></tr>
+      <tr><td>G6</td><td><b>Kiểm kê định kỳ bằng máy quét</b></td><td>Rủi ro lớn nhất của theo dõi lượng còn lại là người dùng quên ghi; kiểm kê đối chiếu và sửa số.</td><td>Lớn</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Nên làm ngay sau đó</h3>
+  <ul>
+    <li><b>G7 · Công thức mẫu khi pha</b> (ví dụ NaOH 0,1 N): chọn công thức và thể tích, app điền sẵn thành phần theo tỷ lệ, người dùng quét chai thật vào từng dòng.</li>
+    <li><b>G8 · Nút "Tạo đề nghị mua"</b> từ cảnh báo sắp hết, để khép vòng "chuẩn bị mua thêm".</li>
+    <li><b>G9 · Xuất hồ sơ truy xuất ra PDF</b> (đưa lên sớm hơn giai đoạn 2): đánh giá viên thường muốn xem hồ sơ này.</li>
+    <li><b>G10 · Chia chai</b> (rót dung môi sang chai nhỏ, mỗi chai nhỏ có nhãn riêng), dùng lại luồng pha chế.</li>
+  </ul>
+  <h3>Để sau, tuỳ nhu cầu</h3>
+  <p>Ảnh cảnh báo nguy hiểm (GHS) và cảnh báo hoá chất không tương thích cùng tủ · dự báo "đủ dùng bao nhiêu tuần" · giá và thống kê chi phí · hàng đợi "chờ gửi" khi mất mạng.</p>
+  <div class="callout key"><b>Em khuyên:</b> chọn <b>G1–G6</b> cho giai đoạn 1 thay vì làm hết. Mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên <b>một tủ thí điểm</b> có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn. Chi tiết thay đổi dữ liệu, flow, màn hình cho từng mục ở tài liệu 01, mục 8.</div>
+  <div class="callout ask"><b>Em cần anh quyết:</b> (1) hoá chất nào có hạn dùng ngắn hơn sau khi mở nắp và có cần quản lý riêng không; (2) kho hiện có khoảng bao nhiêu chai (quyết định công sức nạp tồn đầu kỳ và dán nhãn).</div>
+</section>
+
 <section id="lo-trinh">
-  <h2><span class="num">13</span>Lộ trình triển khai</h2>
+  <h2><span class="num">14</span>Lộ trình triển khai</h2>
   <ol class="timeline">
     <li><b>Chốt câu hỏi mở</b> (mục 11), xin môi trường, tài khoản dịch vụ, nhóm bảo mật.</li>
     <li><b>Dựng dữ liệu:</b> chạy script tạo 10 list, nạp danh mục, vị trí, vai trò, tách quyền.</li>
@@ -221,7 +251,7 @@
 </section>
 
 <section id="trang-thai">
-  <h2><span class="num">14</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
+  <h2><span class="num">15</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
   <div class="tw"><table>
     <thead><tr><th>Hạng mục</th><th>Trạng thái</th></tr></thead>
     <tbody>

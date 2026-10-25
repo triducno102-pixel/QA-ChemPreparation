@@ -6,6 +6,8 @@
 
 **Trong phạm vi giai đoạn 1 (đã thiết kế):** 5 yêu cầu anh nêu + các thành phần bắt buộc để chúng hoạt động đáng tin cậy (phân quyền, sổ cái, nhật ký kiểm toán, cảnh báo hạn dùng và sắp hết theo %, in nhãn có QR + mã vạch).
 
+**Gợi ý mở rộng** (chuyển vị trí, hạn sau mở nắp, nạp tồn đầu kỳ, kiểm kê…): xem mục 8 ở cuối tài liệu này.
+
 **Chưa làm (giai đoạn 2):** duyệt nhập kho bằng Approvals, thông báo qua Teams, PDF nhãn tự động, xuất báo cáo truy xuất PDF/Excel, upload COA từ app, mã vạch 1D, ảnh GHS trên nhãn, quản lý chất đặc biệt, đặt hàng/mua sắm.
 
 ## 2. Yêu cầu → tính năng
@@ -149,3 +151,78 @@ sequenceDiagram
 | 6 | Rà soát bảo mật go-live, UAT, chạy thử 2 tuần với dữ liệu thật | Nghiệm thu theo [05 §6.3](05-Bao-mat-va-Kiem-thu.md) |
 
 Thứ tự này đưa người dùng vào dùng được sớm nhất ở giai đoạn 3 (nhập, quét, xem tồn) rồi mới thêm pha chế và truy xuất.
+
+## 8. Gợi ý mở rộng (đề xuất — chưa đưa vào schema, flow và app)
+
+> Các mục dưới đây là **đề xuất để anh chọn**. Chưa mục nào nằm trong [02](02-Mo-hinh-du-lieu.md), [03](03-Power-Automate.md), [04](04-Power-Apps.md) hay trong bộ 65 ca kiểm thử. Anh chọn mục nào thì em cập nhật cột, flow, màn hình và ca kiểm thử theo mục đó (dự kiến mỗi mục thêm khoảng 3–5 ca kiểm thử). Công sức ước lượng theo thang **Nhỏ** (chủ yếu giao diện) · **Vừa** (vài cột và một flow hoặc một màn hình mới) · **Lớn** (nhiều list, flow và màn hình).
+
+### 8.1 Nên đưa vào giai đoạn 1
+
+Ba mục đầu (G1–G3) là **chỗ thiếu của thiết kế hiện tại**, không chỉ là tính năng thêm.
+
+| # | Gợi ý | Vì sao | Công sức |
+|---|---|---|---|
+| G1 | **Chuyển vị trí chai** bằng cách quét chai rồi quét QR của tủ/kệ | Vị trí hiện chỉ được ghi lúc nhập. Chai chuyển tủ thì dữ liệu sai và người dùng sẽ ngừng tin app. | Nhỏ–Vừa |
+| G2 | **Hạn dùng sau khi mở nắp** | Nhiều hoá chất và dung môi chỉ dùng được 6–12 tháng sau khi mở, dù hạn in trên chai còn dài. App hiện chỉ biết hạn in trên chai. | Vừa |
+| G3 | **Nạp tồn đầu kỳ từ Excel** và kế hoạch dán nhãn chai đang có | Dự án kiểu này hay thất bại ở đây: kho đã có sẵn hàng trăm chai chưa có mã. | Vừa |
+| G4 | **Màn kết quả quét to, đỏ/xanh** | Quét một chai hết hạn, đang chờ kiểm hay dung dịch bị từ chối thì phải hiện chữ "KHÔNG DÙNG" kèm lý do, không chỉ một badge nhỏ. Đây là tính năng an toàn rẻ nhất. | Nhỏ |
+| G5 | **Gợi ý chai hết hạn sớm nhất trước** (FEFO) | Khi chọn chai để pha hoặc dùng, app xếp chai sắp hết hạn lên đầu, giảm hoá chất bị bỏ phí. | Nhỏ |
+| G6 | **Kiểm kê định kỳ bằng máy quét** | Rủi ro lớn nhất của việc theo dõi lượng còn lại là người dùng quên ghi. Kiểm kê quét từng chai trong tủ để đối chiếu và sửa số. | Lớn |
+
+### 8.2 Chi tiết thay đổi dự kiến cho G1–G6
+
+**G1 — Chuyển vị trí chai (`Move`)**
+- **Dữ liệu:** `LabLocations` thêm mã vị trí `LC-nnnnn` (lấy từ `ID`, cùng quy ước với các mã khác) để in QR dán lên tủ/kệ. Bộ nhận dạng mã ở màn Quét mở rộng thêm mẫu `LC-\d{5}`.
+- **Flow:** `LAB-F04` thêm action `Move` với payload `{itemType, itemId, locationId}`; vai trò **Admin và Analyst**; kiểm tra vị trí còn `IsActive`; cập nhật `LocationID`/`LocationName`; ghi `LabAudit` kèm vị trí cũ và mới. Không đổi số lượng nên không đụng sổ cái.
+- **App:** nút "Chuyển vị trí" ở `scrDetail`: quét chai, rồi quét QR vị trí đích (hoặc chọn từ danh sách). `scrLabel` in được nhãn vị trí.
+- **Kiểm thử:** chuyển hợp lệ; vị trí ngừng dùng bị từ chối; Viewer bị từ chối; nhật ký có đủ vị trí cũ/mới.
+
+**G2 — Hạn dùng sau khi mở nắp**
+- **Dữ liệu:** `LabCatalog.ShelfLifeAfterOpenDays` (Number, để trống = không áp dụng); `LabLots.EffectiveExpiryDate` (Date, có index) do flow tính = sớm hơn giữa `ExpiryDate` và `OpenedDate` + số ngày.
+- **Flow:** `LAB-F04` thêm action `Open` để ghi `OpenedDate` **ngay lúc mở nắp**, không đợi lần dùng đầu tiên; `LAB-F01` và `LAB-C01` cũng gán `EffectiveExpiryDate`. BR-03, BR-05, `LAB-S01` và cảnh báo hết hạn đổi sang dùng `EffectiveExpiryDate` thay cho `ExpiryDate`.
+- **App:** nút "Đánh dấu đã mở" ở chi tiết chai; màu hạn dùng tính theo hạn hiệu lực; nhãn nhỏ "Mở ngày … · dùng đến …".
+- **Kiểm thử:** chai hạn in 2028, mở ngày X, quy định 180 ngày → bị chặn sau X + 180 ngày; hạn dung dịch pha bị giới hạn theo hạn hiệu lực của thành phần.
+
+**G3 — Nạp tồn đầu kỳ từ Excel**
+- **Dữ liệu:** tệp Excel mẫu (dạng Table) gồm: hoá chất (khớp danh mục), số lô, hạn dùng, lượng ban đầu, lượng hiện còn, vị trí, ngày nhận (tuỳ chọn).
+- **Flow:** `LAB-F05 ImportOpeningStock`, **chỉ Admin**, hai bước. *Kiểm tra*: đọc bảng Excel trong thư viện `LabImport`, kiểm từng dòng (khớp danh mục, đơn vị, hạn dùng, `còn ≤ ban đầu`) và trả danh sách lỗi kèm số dòng. *Nhập*: chỉ chạy khi không còn lỗi; tạo chai và ghi sổ cái `Receive` +ban đầu rồi `Adjust` −(ban đầu − hiện còn) với lý do "Tồn đầu kỳ", để tổng sổ cái đúng bằng lượng hiện còn. Trả tệp kết quả có mã từng chai để in nhãn hàng loạt. `RequestId` theo tệp + số dòng nên chạy lại không tạo trùng.
+- **Triển khai:** thí điểm **một tủ** trước; dán nhãn xong, quét xác nhận từng chai (dùng chức năng kiểm kê G6 nếu đã làm); rồi mở rộng.
+- **Kiểm thử:** dòng sai được báo kèm số dòng và lý do; không nhập khi còn lỗi; chạy lại cùng tệp không tạo trùng.
+
+**G4 — Màn kết quả quét to, đỏ/xanh**
+- **App:** dải trạng thái trên cùng `scrDetail` có ba mức: xanh "Dùng được"; vàng "Dùng được — lưu ý" (sắp hết hạn, còn ít); đỏ "KHÔNG DÙNG" kèm lý do (hết hạn, đang chờ kiểm, dung dịch bị từ chối duyệt, đã hết, đã huỷ/vô hiệu). Tính từ cùng quy tắc BR-03; nút "Ghi nhận sử dụng" bị khoá khi đỏ.
+- **Dữ liệu, flow:** không đổi. **Kiểm thử:** mỗi lý do hiển thị đúng; nút bị khoá khi đỏ.
+
+**G5 — Gợi ý chai hết hạn sớm nhất trước (FEFO)**
+- **App:** danh sách chọn chai (thêm thành phần, ghi nhận sử dụng) sắp theo hạn hiệu lực sớm nhất trước và đánh dấu "Dùng trước"; chọn chai khác của cùng hoá chất thì hiện cảnh báo mềm "IN-… hết hạn sớm hơn" (không chặn).
+- **Dữ liệu, flow:** không đổi.
+
+**G6 — Kiểm kê bằng máy quét**
+- **Dữ liệu:** `LabStocktake` (phiên kiểm kê: mã `KK-yy-nnnnn`, vị trí, trạng thái Open/Closed, người mở/đóng) và `LabStocktakeLines` (phiên, chai/dung dịch, lượng dự kiến, lượng đếm, chênh lệch, ghi chú).
+- **Flow:** `LAB-F06 Stocktake` ba bước. *Start*: chọn vị trí, chụp danh sách dự kiến từ sổ cái. *Scan*: ghi từng dòng; chai quét được nhưng đang ghi ở vị trí khác thì đề nghị `Move` (G1). *Close*: liệt kê chai không tìm thấy; chênh lệch số lượng chuyển Admin duyệt, duyệt xong mới ghi `Adjust` qua `LAB-C01` với lý do "Kiểm kê KK-…". **Không tự huỷ** chai không tìm thấy.
+- **App:** `scrStocktake`: chọn vị trí rồi quét liên tục bằng máy Zebra; bộ đếm "đã quét x / dự kiến y" và danh sách còn thiếu; chai còn nguyên bấm "Không đổi", chai đã dùng một phần nhập lượng ước tính.
+- **Kiểm thử:** chai thiếu được liệt kê, không bị tự huỷ; chênh lệch cần Admin duyệt mới đổi tồn; bất biến sổ cái giữ nguyên.
+
+### 8.3 Nên làm ngay sau đó
+
+| # | Gợi ý | Thay đổi dự kiến | Công sức |
+|---|---|---|---|
+| G7 | **Công thức mẫu khi pha** (ví dụ "NaOH 0,1 N") | `LabRecipes` (tên, SOP, lượng chuẩn, số ngày hạn dùng của dung dịch) và `LabRecipeItems` (hoá chất theo danh mục, lượng trên đơn vị chuẩn, vai trò). Khi pha: chọn công thức và thể tích, app điền sẵn các dòng thành phần theo tỷ lệ; người dùng quét chai thật vào từng dòng và app kiểm chai thuộc đúng hoá chất của dòng. Hạn dùng gợi ý = ngày pha + số ngày của công thức, vẫn bị giới hạn bởi BR-05. | Vừa–Lớn |
+| G8 | **Nút "Tạo đề nghị mua"** từ cảnh báo sắp hết | `LabPurchaseRequests` (hoá chất, lượng gợi ý = tồn chuẩn − tổng tồn, trạng thái Nháp/Đã gửi/Đã đặt/Đã nhận, người đề nghị). Flow `LAB-F07` tạo bản ghi và gửi email (hoặc Approvals) cho người mua; khi `LAB-F01` nhập đúng hoá chất đó thì tự đổi sang "Đã nhận". Khép vòng "chuẩn bị mua thêm". | Vừa |
+| G9 | **Xuất hồ sơ truy xuất ra PDF** (đưa lên sớm hơn giai đoạn 2) | Flow `LAB-F08` nhận mã `PC-…` hoặc `IN-…`, dựng trang HTML (thông tin, cây nguồn gốc, danh sách biên bản), đổi sang PDF bằng connector OneDrive/SharePoint (**cần xác nhận connector và giấy phép**), lưu vào thư viện `LabReports` và trả link. Đánh giá viên (ví dụ ISO/IEC 17025) thường muốn xem hồ sơ này. | Vừa |
+| G10 | **Chia chai** (rót dung môi sang chai nhỏ) | Dùng lại luồng pha chế với `PrepType = Chia chai`, một thành phần, lượng sau pha = lượng đã rót; hạn dùng tối đa bằng hạn hiệu lực của chai gốc; có lối tắt "Chia chai" điền sẵn. Mỗi chai nhỏ có nhãn riêng. | Nhỏ |
+
+### 8.4 Để sau, tuỳ nhu cầu
+
+- **Cảnh báo nguy hiểm và tương thích:** hiện ảnh GHS và link SDS khi quét; bảng quy tắc `LabCompat` (cặp loại nguy hiểm không để chung tủ) để cảnh báo khi nhập hoặc chuyển vị trí.
+- **Dự báo "đủ dùng khoảng bao nhiêu tuần":** `LAB-S01` tính mức tiêu thụ trung bình 90 ngày từ sổ cái và lưu vào danh mục; bổ sung cho cảnh báo theo %.
+- **Giá và thống kê chi phí:** `UnitPrice` ở danh mục hoặc lô; báo cáo tiêu thụ theo tháng.
+- **Mất mạng:** Power Apps hạn chế khi offline; thiết kế đã có `RequestId` để gửi lại không ghi trùng, có thể thêm hàng đợi "chờ gửi" nếu lab có sóng yếu.
+
+### 8.5 Khuyến nghị phạm vi
+
+Chọn **G1–G6** cho giai đoạn 1 thay vì làm hết: mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên **một tủ thí điểm** có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn.
+
+Hai điều cần anh quyết (cũng nằm trong [05 §7](05-Bao-mat-va-Kiem-thu.md)):
+1. Hoá chất nào ở lab có hạn dùng ngắn hơn sau khi mở nắp, và có cần quản lý riêng không (G2)?
+2. Kho hiện có khoảng bao nhiêu chai? Con số này quyết định công sức nạp tồn đầu kỳ và dán nhãn (G3).

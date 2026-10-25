@@ -232,3 +232,5 @@ Quy tắc tách nhiệm: người duyệt dung dịch ≠ người pha (BR-08). 
 9. Có cần **ảnh GHS/cảnh báo nguy hiểm** trên nhãn, và **kiểm soát chất thuộc diện đặc biệt** (tiền chất, chất độc) không?
 10. **Ngôn ngữ**: chỉ tiếng Việt hay song ngữ?
 11. **Cảnh báo sắp hết:** mốc 100% lấy từ *lượng tồn chuẩn* của từng hoá chất (hoặc tồn cao nhất đã đạt) và ngưỡng mặc định 20% có hợp lý không? Hay anh muốn so với từng chai, hoặc dùng số lượng tuyệt đối?
+12. **Hạn dùng sau khi mở nắp** ([01 mục 8, G2](01-Thiet-ke-tong-the.md)): hoá chất/dung môi nào có hạn ngắn hơn sau khi mở, và có cần quản lý riêng không?
+13. **Quy mô kho hiện tại:** khoảng bao nhiêu chai đang có? (quyết định công sức nạp tồn đầu kỳ và dán nhãn — G3)

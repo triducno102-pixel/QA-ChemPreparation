@@ -1,7 +1,7 @@
 #Requires -Version 7.2
 <#
 .SYNOPSIS
-    Tạo 10 SharePoint list của ứng dụng LabChem theo LabChem.Schema.ps1.
+    Tạo 11 SharePoint list của ứng dụng LabChem theo LabChem.Schema.ps1.
 
 .DESCRIPTION
     - Idempotent: chạy lại sẽ bỏ qua list/cột đã tồn tại.
@@ -133,6 +133,18 @@ foreach ($listName in $LabSchema.Keys) {
         Write-Host "   + $($f.Name)"
     }
 
+    # Nhật ký / sổ cái / sổ nhận yêu cầu lớn dần theo thời gian: đánh index Created, Modified để lọc và sắp xếp không vướng ngưỡng 5.000
+    # (LAB-S03 cũng lọc theo Modified để phát hiện dòng bị sửa).
+    if ($spec.IndexSystemDates) {
+        foreach ($sys in 'Created', 'Modified') {
+            try {
+                Set-PnPField -List $listName -Identity $sys -Values @{ Indexed = $true } | Out-Null
+            } catch {
+                Write-Warning "   Không đánh được index cột $sys của ${listName} (làm tay trong List settings > Indexed columns): $($_.Exception.Message)"
+            }
+        }
+    }
+
     try {
         Set-PnPView -List $listName -Identity 'All Items' -Fields $spec.ViewFields | Out-Null
     } catch {
@@ -168,9 +180,11 @@ if ($ApplyPermissions) {
     if (-not $ServiceAccountUpn) { throw '-ApplyPermissions cần -ServiceAccountUpn (tài khoản sở hữu connection của flow).' }
 
     # Permission level tuỳ biến: không cho xoá; ledger/audit còn không cho sửa.
+    # DeleteVersions cũng bị loại: nếu không, người sửa được item còn xoá được lịch sử phiên bản
+    # (lớp bằng chứng thứ hai sau LabAudit). Tên quyền cần kiểm lại bằng Get-PnPRoleDefinition trên tenant thật.
     $levels = @{
-        'LabChem Writer (No Delete)'  = @{ Clone = 'Contribute'; Exclude = @('DeleteListItems') }
-        'LabChem Append Only'         = @{ Clone = 'Contribute'; Exclude = @('EditListItems', 'DeleteListItems') }
+        'LabChem Writer (No Delete)'  = @{ Clone = 'Contribute'; Exclude = @('DeleteListItems', 'DeleteVersions') }
+        'LabChem Append Only'         = @{ Clone = 'Contribute'; Exclude = @('EditListItems', 'DeleteListItems', 'DeleteVersions') }
     }
     foreach ($name in $levels.Keys) {
         if (-not (Get-PnPRoleDefinition -Identity $name -ErrorAction SilentlyContinue)) {
@@ -190,17 +204,19 @@ if ($ApplyPermissions) {
 
     # list -> quyền của từng nhóm  (Owner luôn Full Control)
     #   Service = quyền của tài khoản flow; Admin/Reader = các nhóm lab
+    #   Không nhóm lab nào được ghi trực tiếp: Admin sửa danh mục/cấu hình/vai trò qua flow LAB-F05 để có nhật ký trước/sau.
     $matrix = [ordered]@{
-        LabCatalog   = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Contribute'; Readers = 'Read'; Reviewers = 'Read' }
-        LabLocations = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Contribute'; Readers = 'Read'; Reviewers = 'Read' }
-        LabSettings  = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Contribute'; Readers = 'Read'; Reviewers = 'Read' }
-        LabRoles     = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Contribute'; Readers = 'Read'; Reviewers = 'Read' }
-        LabLots      = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read';       Readers = 'Read'; Reviewers = 'Read' }
-        LabPreps     = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read';       Readers = 'Read'; Reviewers = 'Read' }
-        LabPrepItems = @{ Service = 'LabChem Append Only';        Admins = 'Read';       Readers = 'Read'; Reviewers = 'Read' }
-        LabTestUsage = @{ Service = 'LabChem Append Only';        Admins = 'Read';       Readers = 'Read'; Reviewers = 'Read' }
-        LabLedger    = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read';       Readers = 'Read'; Reviewers = 'Read' }   # BalanceAfter được cập nhật sau khi tính số dư
-        LabAudit     = @{ Service = 'LabChem Append Only';        Admins = 'Read';       Readers = $null;  Reviewers = 'Read' }   # Analyst/Viewer không đọc audit
+        LabCatalog   = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabLocations = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabSettings  = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabRoles     = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabLots      = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabPreps     = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabPrepItems = @{ Service = 'LabChem Append Only';        Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabTestUsage = @{ Service = 'LabChem Append Only';        Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }
+        LabLedger    = @{ Service = 'LabChem Append Only';        Admins = 'Read'; Readers = 'Read'; Reviewers = 'Read' }   # không bao giờ sửa dòng đã ghi (BalanceAfter chỉ tham khảo)
+        LabAudit     = @{ Service = 'LabChem Append Only';        Admins = 'Read'; Readers = $null;  Reviewers = 'Read' }   # Analyst/Viewer không đọc nhật ký
+        LabRequests  = @{ Service = 'LabChem Writer (No Delete)'; Admins = 'Read'; Readers = $null;  Reviewers = $null }    # sổ nhận yêu cầu: cần Edit để cập nhật trạng thái; người dùng không truy cập
     }
 
     foreach ($listName in $matrix.Keys) {
@@ -209,7 +225,7 @@ if ($ApplyPermissions) {
         Set-PnPListPermission -Identity $listName -Group $ownerGroup -AddRole 'Full Control'
         Set-PnPListPermission -Identity $listName -User $ServiceAccountUpn -AddRole $m.Service
         Set-PnPListPermission -Identity $listName -Group 'LabChem Admins' -AddRole $m.Admins
-        Set-PnPListPermission -Identity $listName -Group 'LabChem Reviewers' -AddRole $m.Reviewers
+        if ($m.Reviewers) { Set-PnPListPermission -Identity $listName -Group 'LabChem Reviewers' -AddRole $m.Reviewers }
         if ($m.Readers) {
             Set-PnPListPermission -Identity $listName -Group 'LabChem Analysts' -AddRole $m.Readers
             Set-PnPListPermission -Identity $listName -Group 'LabChem Viewers' -AddRole $m.Readers

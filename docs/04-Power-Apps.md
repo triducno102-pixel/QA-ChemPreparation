@@ -13,7 +13,8 @@ Giao diện tham chiếu: [mockup/index.html](../mockup/index.html). Mở bằng
 | Data row limit | 2000 | Giới hạn tối đa; mọi truy vấn phải delegable |
 | Controls | **Modern controls** (Fluent) cho Button, Text input, Combo box, Date picker; **Classic** cho Gallery | Modern có giao diện hiện đại và hỗ trợ accessibility tốt hơn. Control quét camera *Barcode reader* chỉ dùng cho điện thoại/tablet (mục 4.2) |
 | Named formulas, Formula-level error management | Bật | Dùng cho `App.Formulas` và `IfError` |
-| Data sources | 10 list `Lab*` (SharePoint) + flow `LAB-F01…F04` | `LabAudit` chỉ cần khi có màn Nhật ký |
+| Data sources | 11 list `Lab*` (SharePoint) + flow `LAB-F01…F06` | `LabAudit` chỉ Admin/Reviewer đọc được và chỉ dùng ở `scrAudit` + tab Nhật ký của `scrDetail`; `LabRequests` không đưa vào app |
+| Ghi dữ liệu | **Không có** `Patch` / `Collect` / `SubmitForm` nào trỏ vào list `Lab*` | Mọi thay đổi gọi flow; Admin cũng chỉ có quyền đọc. Đây là điều kiện để nhật ký đầy đủ ([03 §2.5](03-Power-Automate.md)) |
 | Sharing | Chia sẻ cho **nhóm bảo mật** (không phải "Everyone"), quyền *User* | Xem [05](05-Bao-mat-va-Kiem-thu.md) |
 
 ## 2. Design tokens — `App.Formulas`
@@ -45,6 +46,9 @@ fxCanReview = fxRole = "Admin" || fxRole = "Reviewer";
 fxIsAdmin   = fxRole = "Admin";
 fxIsPhone   = App.Width < 700;
 fxIsCompact = App.Width < 1100;
+fxCanAudit  = fxRole = "Admin" || fxRole = "Reviewer";   // xem LabAudit: màn Nhật ký + tab Nhật ký ở scrDetail
+cfgAppVer   = "1.0.0";
+fxClient    = "LabChem " & cfgAppVer & " · " & If(fxIsPhone, "phone", If(fxIsCompact, "tablet", "desktop"));   // gửi kèm mọi payload → LabAudit.ClientInfo
 
 cfgWarnDays = With({v: IfError(Value(LookUp(LabSettings, Title = "ExpiryWarnDays").Value), 30)}, If(v > 0, v, 30));
 cfgLowPct   = With({v: IfError(Value(LookUp(LabSettings, Title = "DefaultLowStockPct").Value), 20)}, If(v > 0, v, 20));   // ngưỡng cảnh báo sắp hết mặc định (%)
@@ -68,6 +72,12 @@ tblTxn = Table(
     {Key: "PrepUse",    Label: "Dùng để pha"},     {Key: "TestUse",    Label: "Dùng thử nghiệm"},
     {Key: "Adjust",     Label: "Điều chỉnh"},      {Key: "Dispose",    Label: "Huỷ bỏ"},
     {Key: "Reversal",   Label: "Đảo bút toán"}
+);
+tblReason = Table(      // mã lý do cho Adjust / Dispose (LabLedger.ReasonCode)
+    {Key: "EntryError",      Label: "Nhập sai số liệu"},   {Key: "CountCorrection", Label: "Kiểm đếm lại"},
+    {Key: "Expired",         Label: "Hết hạn"},            {Key: "Spilled",         Label: "Đổ / vỡ / hao hụt"},
+    {Key: "Contaminated",    Label: "Nhiễm bẩn"},          {Key: "Waste",           Label: "Thải bỏ"},
+    {Key: "Other",           Label: "Lý do khác"}
 );
 tblUnits = Table(
     {Unit: "mg", Base: "g",   Factor: 0.001}, {Unit: "g",  Base: "g",   Factor: 1}, {Unit: "kg", Base: "g",   Factor: 1000},
@@ -99,14 +109,14 @@ If(IsBlank(ThisItem.ExpiryDate), clrMuted,
         Điện thoại (fxIsPhone): nav rail → thanh điều hướng dưới đáy 5 mục
 ```
 
-- Mục nav: **Trang chủ · Quét mã · Tồn kho · Nhập hoá chất · Pha chế · Truy xuất · Quản trị** (Quản trị chỉ hiện khi `fxIsAdmin`; Nhập/Pha chế chỉ hiện khi `fxCanWrite`).
+- Mục nav: **Trang chủ · Quét mã · Tồn kho · Nhập hoá chất · Pha chế · Truy xuất · Nhật ký · Quản trị** (Quản trị chỉ hiện khi `fxIsAdmin`; Nhật ký chỉ hiện khi `fxCanAudit`; Nhập/Pha chế chỉ hiện khi `fxCanWrite`).
 - Mỗi màn hình dựng bằng **Container (auto-layout)**; không đặt `X/Y` thủ công. Nav rail, header, badge trạng thái, tile KPI, ô nhập mã làm **component** dùng chung (mục 8).
 - `App.StartScreen = If(fxRole = "None", scrNoAccess, scrHome)`.
 
 ```powerfx
 // App.OnStart  (giữ tối thiểu; logic phụ thuộc dữ liệu đã nằm ở named formulas)
 Set(varDeepLink, Param("code"));   // QR dạng DeepLink: ...&code=PC-26-00017
-Set(varReqId, GUID());             // RequestId cho thao tác ghi hiện hành
+Set(varReqId, GUID());             // RequestId của *ý định* thao tác hiện hành — quy tắc sinh mới ở mục 4.4
 Set(varBusy, false);
 ```
 
@@ -164,7 +174,7 @@ kpiExpired  = CountRows(Filter(colActive, ExpiryDate < Today()))     // đã qu�
 kpiLow      = CountRows(Filter(colStock, Low))      // Cần mua thêm
 
 // Hoạt động gần đây (Items của Gallery)
-FirstN(Sort(LabLedger, Created, SortOrder.Descending), 8)
+FirstN(Sort(LabLedger, ID, SortOrder.Descending), 8)    // sắp theo ID (luôn có index) thay vì Created: sổ cái vượt 5.000 dòng vẫn không vướng ngưỡng
 ```
 
 > `colActive` giới hạn 2000 dòng. Nếu số chai đang quản lý vượt ngưỡng, KPI sẽ thiếu — chuyển sang snapshot do `LAB-S01` ghi (xem [02](02-Mo-hinh-du-lieu.md) mục 7).
@@ -301,7 +311,7 @@ If(IsBlank(varView), Notify("Không tìm thấy " & pCode, NotificationType.Erro
 Set(varReqId, GUID());
 ```
 
-Bố cục: cột trái = thẻ thông tin + **QR** + đồng hồ lượng còn lại; cột phải = tab **Lịch sử** / **Công thức** (chỉ Prep) / **Biên bản liên quan**.
+Bố cục: cột trái = thẻ thông tin + **QR** + đồng hồ lượng còn lại; cột phải = tab **Lịch sử** (sổ cái) / **Công thức** (chỉ Prep) / **Biên bản liên quan** / **Nhật ký** (chỉ `fxCanAudit`: ai đăng ký, release, duyệt, điều chỉnh, huỷ, vô hiệu… kèm lý do và giá trị trước/sau).
 
 ```powerfx
 // Lịch sử xuất/nhập (Items)
@@ -312,6 +322,9 @@ Filter(LabPrepItems, PrepID = varView.ID)
 
 // Biên bản liên quan
 Filter(LabTestUsage, ItemType.Value = varView.Type && ItemID = varView.ID)
+
+// Nhật ký của chính đối tượng (chỉ Admin/Reviewer): EntityCode có index; sắp theo ID giảm dần
+Sort(Filter(LabAudit, EntityCode = varView.Code), ID, SortOrder.Descending)
 
 // Ảnh QR (Image.Image)
 cfgQRBase & EncodeUrl(If(cfgQRMode = "DeepLink" && !IsBlank(cfgAppLink), cfgAppLink & "&code=" & varView.Code, varView.Code))
@@ -326,25 +339,48 @@ Nút (hiện theo vai trò và trạng thái):
 | Truy xuất | luôn | `Navigate(scrTrace, …, {pCode: varView.Code})` |
 | Duyệt / Từ chối (Prep) | `fxCanReview` và `ReviewStatus = Pending` | gọi `LAB-F04` `Review` |
 | Release (Lot Quarantine) | `fxCanReview` | gọi `LAB-F04` `Release` |
-| Điều chỉnh / Huỷ bỏ / Vô hiệu | `fxIsAdmin` | hộp thoại bắt buộc nhập lý do → `LAB-F04` |
+| Điều chỉnh / Huỷ bỏ / Vô hiệu | `fxIsAdmin` | hộp thoại bắt buộc nhập **lý do** (≥ 10 ký tự) và chọn **mã lý do** (`tblReason`) → `LAB-F04`; hiển thị "thao tác này sẽ ghi nhật ký mức Critical và gửi email" |
 
-Mẫu gọi flow (dùng chung cho mọi thao tác ghi). `requestId` **sinh một lần** khi mở màn hình/biểu mẫu, không sinh lại trong lúc thử lại — đó là cơ chế chống ghi trùng:
+Mẫu gọi flow (dùng chung cho mọi thao tác ghi). `requestId` đại diện cho **một ý định thao tác**, không phải một lần bấm nút:
 
 ```powerfx
 Set(varBusy, true);
 Set(varRes, Blank());
 IfError(
     Set(varRes, 'LAB-F04 AdminAction'.Run(JSON(
-        {requestId: varReqId, action: "Adjust", itemType: varView.Type, itemId: varView.ID,
-         newQty: Value(txtNewQty.Value), decision: "", reason: Trim(txtReason.Value)},
+        {requestId: varReqId, client: fxClient, action: "Adjust", itemType: varView.Type, itemId: varView.ID,
+         newQty: Value(txtNewQty.Value), expectedQty: varExpectedQty, decision: "", reason: Trim(txtReason.Value), reasonCode: ddReason.Selected.Key},
         JSONFormat.Compact))),
-    Notify("Không kết nối được máy chủ. Hãy thử lại — thao tác sẽ không bị ghi trùng.", NotificationType.Error)
+    Notify("Không nhận được phản hồi từ máy chủ. Thao tác CÓ THỂ đã được ghi. Hãy bấm thử lại — hệ thống sẽ không ghi trùng.", NotificationType.Error)
 );
 Set(varBusy, false);
-If(!IsBlank(varRes) && varRes.success,
-    Notify(varRes.message, NotificationType.Success); Set(varReqId, GUID()); Navigate(scrDetail, ScreenTransition.None, {pCode: varView.Code}),
-    !IsBlank(varRes), Notify(varRes.message, NotificationType.Error))
+// Xử lý phản hồi theo varRes.state (bảng bên dưới)
+If(
+    IsBlank(varRes), Blank(),                       // mất mạng / quá thời gian: giữ nguyên requestId để gửi lại an toàn
+    varRes.state = "Done",     Notify(varRes.message, NotificationType.Success); Set(varReqId, GUID()); Navigate(scrDetail, ScreenTransition.None, {pCode: varView.Code}),
+    varRes.state = "Rejected", Notify(varRes.message, NotificationType.Error); Set(varReqId, GUID()),
+    varRes.state = "Busy",     Notify(varRes.message, NotificationType.Information),
+    Notify(varRes.message & " (mã tham chiếu " & varRes.ref & ")", NotificationType.Error)    // Interrupted, Error
+)
 ```
+
+| Phản hồi `state` | App làm gì | `varReqId` |
+|---|---|---|
+| `Done` | Báo thành công, đi tiếp | **Sinh mới** (ý định đã xong) |
+| `Rejected` | Hiện lý do ngay cạnh vùng thao tác, giữ dữ liệu đã nhập để sửa | **Sinh mới** — flow đã nhận và đóng `requestId` này; lần gửi lại sau khi sửa là một ý định mới |
+| `Busy` | Báo "đang xử lý", tự hỏi lại sau vài giây | **Giữ nguyên** |
+| `Interrupted`, `Error` | Hiện lý do + mã tham chiếu `ref`, hướng dẫn báo Admin; không tự gửi lại | **Giữ nguyên** (gửi lại chỉ nhận lại đúng thông báo cũ, an toàn); chỉ sinh mới khi Admin đã kiểm tra và người dùng bấm "Làm lại từ đầu" |
+| Không có phản hồi (mất mạng, quá hạn) | Báo "có thể đã ghi", cho thử lại | **Giữ nguyên** — đây chính là trường hợp chống ghi trùng được thiết kế cho |
+
+**Hộp thoại Điều chỉnh:** khi mở, đọc lại số hiện tại, hiển thị đúng số đó và ghi nhớ nó làm `expectedQty`. Nếu lúc lưu flow báo "Số dư vừa đổi (200 → 170)", hộp thoại hiện số mới và yêu cầu đếm lại — không tự gửi lại.
+
+```powerfx
+// Mở hộp thoại Điều chỉnh
+Refresh(LabLots); Refresh(LabPreps);
+Set(varExpectedQty, If(varView.Type = "Lot", LookUp(LabLots, ID = varView.ID).RemainingQty, LookUp(LabPreps, ID = varView.ID).RemainingQty));
+```
+
+> Quy tắc cũ "chỉ sinh `requestId` mới khi thành công" **không còn đúng**: flow nay *đóng* `requestId` ngay khi nhận (kể cả khi từ chối), nên gửi lại sau `Rejected` bằng cùng `requestId` chỉ nhận lại lời từ chối cũ.
 
 ### 4.5 `scrLotRegister` — Đăng ký hoá chất đầu vào
 
@@ -384,6 +420,7 @@ IfError(
     Set(varRes, 'LAB-F01 RegisterIncoming'.Run(JSON(
         {
             requestId:    varReqId,
+            client:       fxClient,
             catalogId:    cmbChem.Selected.ID,
             mfgLot:       Trim(txtMfgLot.Value),
             manufacturer: Trim(txtManufacturer.Value),
@@ -403,11 +440,13 @@ IfError(
 );
 Set(varBusy, false);
 If(
-    !IsBlank(varRes) && varRes.success,
+    IsBlank(varRes), Blank(),
+    varRes.state = "Done",
     Set(varReqId, GUID());
     Navigate(scrLabel, ScreenTransition.None, {pCodes: ForAll(Split(varRes.codes, ","), {Code: Value})}),
-    !IsBlank(varRes),
-    Notify(varRes.message, NotificationType.Error)
+    varRes.state = "Rejected", Notify(varRes.message, NotificationType.Error); Set(varReqId, GUID()),
+    varRes.state = "Busy",     Notify(varRes.message, NotificationType.Information),
+    Notify(varRes.message & " (mã tham chiếu " & varRes.ref & ")", NotificationType.Error)
 )
 ```
 
@@ -429,14 +468,14 @@ If(
     Left(varAddCode, 3) = "IN-",
     With({s: LookUp(LabLots, Title = varAddCode)},
         If(IsBlank(s), Notify("Không tìm thấy " & varAddCode, NotificationType.Error),
-           Collect(colIng, {Type: "Lot", ID: s.ID, Code: s.Title, Name: s.ChemName, Detail: "Lô " & s.MfgLot,
-                            Unit: s.Unit.Value, Avail: s.RemainingQty, Expiry: s.ExpiryDate, Status: s.Status.Value,
+           Collect(colIng, {Type: "Lot", ID: s.ID, CatalogID: s.CatalogID, Code: s.Title, Name: s.ChemName, Detail: "Lô " & s.MfgLot,
+                            Unit: s.Unit.Value, Avail: s.RemainingQty, AvailAt: Now(), Expiry: s.ExpiryDate, Status: s.Status.Value,
                             InQty: 0, InUnit: s.Unit.Value, Qty: 0, Role: "Chất tan"}))),
     Left(varAddCode, 3) = "PC-",
     With({s: LookUp(LabPreps, Title = varAddCode)},
         If(IsBlank(s), Notify("Không tìm thấy " & varAddCode, NotificationType.Error),
-           Collect(colIng, {Type: "Prep", ID: s.ID, Code: s.Title, Name: s.PrepName, Detail: s.Concentration,
-                            Unit: s.Unit.Value, Avail: s.RemainingQty, Expiry: s.ExpiryDate, Status: s.Status.Value,
+           Collect(colIng, {Type: "Prep", ID: s.ID, CatalogID: 0, Code: s.Title, Name: s.PrepName, Detail: s.Concentration,
+                            Unit: s.Unit.Value, Avail: s.RemainingQty, AvailAt: Now(), Expiry: s.ExpiryDate, Status: s.Status.Value,
                             InQty: 0, InUnit: s.Unit.Value, Qty: 0, Role: "Chất tan"}))),
     Notify("Mã không hợp lệ", NotificationType.Warning)
 )
@@ -465,11 +504,59 @@ CountRows(Filter(colIng, Qty <= 0 || Qty > Avail || Expiry < Today() || !(Status
 
 **Bước 3 — Xác nhận:** bảng công thức, cảnh báo (hạn dùng vượt hạn thành phần, thành phần sắp hết hạn), nút **Lưu & in nhãn**.
 
+**Số liệu cũ khi nhiều người cùng dùng** ([01 §5.5](01-Thiet-ke-tong-the.md)). Con số `Avail` trong `colIng` chỉ là ảnh chụp lúc thêm thành phần (`AvailAt`). Mỗi dòng hiện "Còn 400 mL (xem lúc 09:12)". Ba việc app làm — **không cần quét lại**:
+
+1. **Làm mới trước khi lưu và định kỳ.** Khi vào bước 3, khi bấm "Làm mới số liệu", và cứ 45 giây khi form còn mở (`tmrFresh`, chỉ chạy khi `varStep ≥ 2`), app đọc lại từng thành phần. Dòng nào đổi thì ghi vào `colChanged`, hiện dải "Số liệu vừa đổi: IN-26-00042: 400 → 100 mL", **khoá nút Lưu** cho đến khi người dùng bấm "Tôi đã xem" và (nếu cần) sửa lượng.
+2. **Khi bị từ chối** (`state = Rejected` và có `varRes.lines`): cập nhật số của đúng các dòng đó từ phản hồi, tô nổi bật, giữ nguyên mọi thứ khác người dùng đã nhập.
+3. **Gợi ý chai khác** cho dòng không đủ: các chai cùng hoá chất, còn đủ lượng, còn hạn, hạn sớm nhất lên đầu (G5); bấm một chai để thay vào dòng.
+
+```powerfx
+// tmrFresh.OnTimerEnd (45 s) và nút "Làm mới số liệu" — chỉ đọc, không ghi
+Refresh(LabLots); Refresh(LabPreps);
+Clear(colChanged);
+ForAll(
+    colIng As r,
+    With(
+        {cur: If(r.Type = "Lot", LookUp(LabLots, ID = r.ID), LookUp(LabPreps, ID = r.ID))},
+        If(
+            cur.RemainingQty <> r.Avail || cur.Status.Value <> r.Status,
+            Collect(colChanged, {Code: r.Code, Was: r.Avail, Now: cur.RemainingQty, Unit: r.Unit});
+            UpdateIf(colIng, Code = r.Code, {Avail: cur.RemainingQty, Status: cur.Status.Value, AvailAt: Now()})
+        )
+    )
+);
+
+// Dải cảnh báo (Visible = CountRows(colChanged) > 0) và điều kiện cho nút Lưu
+Concat(colChanged, Code & ": " & Text(Was) & " → " & Text(Now) & " " & Unit, "; ")
+btnSavePrep.DisplayMode = If(CountRows(colChanged) = 0 && /* các điều kiện cũ */ true, DisplayMode.Edit, DisplayMode.Disabled)
+
+// Sau khi bị từ chối: cập nhật số các dòng có vấn đề từ varRes.lines (JSON do flow trả)
+ForAll(
+    Table(ParseJSON(varRes.lines)) As l,
+    UpdateIf(colIng, Code = Text(l.Value.code), {Avail: Value(l.Value.available), AvailAt: Now()})
+);
+
+// Gợi ý chai khác cùng hoá chất còn đủ (Items của danh sách gợi ý dưới dòng không đủ)
+Sort(
+    Filter(
+        LabLots,
+        CatalogID = ThisItem.CatalogID,
+        Status.Value = "Available" || Status.Value = "InUse",
+        RemainingQty >= ThisItem.Qty,
+        ExpiryDate >= Today(),
+        Title <> ThisItem.Code
+    ),
+    ExpiryDate, SortOrder.Ascending
+)
+```
+
+Dòng là dung dịch pha (`Type = "Prep"`) không có gợi ý chai khác (mỗi lần pha là một mã riêng).
+
 ```powerfx
 // btnSavePrep.OnSelect (rút gọn phần kiểm tra, giống 4.5)
 Set(varRes, 'LAB-F02 CreatePreparation'.Run(JSON(
     {
-        requestId: varReqId, prepName: Trim(txtPrepName.Value), prepType: ddPrepType.Selected.Value,
+        requestId: varReqId, client: fxClient, prepName: Trim(txtPrepName.Value), prepType: ddPrepType.Selected.Value,
         concentration: Trim(txtConc.Value), sopRef: Trim(txtSop.Value), procedure: Trim(txtProc.Value),
         prepDate: Text(dpPrep.SelectedDate, "yyyy-mm-dd", "en-US"), expiryDate: Text(dpPrepExpiry.SelectedDate, "yyyy-mm-dd", "en-US"),
         finalQty: Value(txtFinal.Value) * LookUp(tblUnits, Unit = ddFinalUnit.Selected.Unit).Factor,
@@ -477,15 +564,16 @@ Set(varRes, 'LAB-F02 CreatePreparation'.Run(JSON(
         locationId: Coalesce(cmbPrepLoc.Selected.ID, 0), storageCondition: ddStorage.Selected.Value, note: Trim(txtPrepNote.Value),
         items: ForAll(colIng, {sourceType: Type, sourceId: ID, qty: Qty, role: Role})
     }, JSONFormat.Compact)));
-// thành công: Clear(colIng); Set(varStep, 1); Set(varReqId, GUID()); Navigate(scrLabel, …, {pCodes: Table({Code: varRes.codes})})
+// state = Done: Clear(colIng); Set(varStep, 1); Set(varReqId, GUID()); Navigate(scrLabel, …, {pCodes: Table({Code: varRes.codes})})
+// state = Rejected: giữ colIng để sửa, Set(varReqId, GUID()); Busy / Interrupted / Error: như mục 4.4
 ```
 
 ### 4.7 `scrUsage` — Ghi nhận sử dụng & gắn biên bản thử nghiệm
 
 Dùng khi chạy thử nghiệm: nhập **Số biên bản**, link biên bản, phép thử, mã mẫu, thời điểm; rồi quét/nhập một hoặc nhiều mã hoá chất (dung dịch pha hoặc chai) và lượng đã dùng cho mỗi mã. Công tắc "Không gắn biên bản" chuyển `purpose = "Other"` và bắt buộc nhập lý do.
 
-- Danh sách dòng: `colUse` (giống `colIng`, khác ở chỗ không có `Role`).
-- Gọi `'LAB-F03 RecordUsage'.Run(JSON({requestId, purpose, reportNo, reportUrl, testName, sampleCode, usedDate, note, lines: ForAll(colUse, {itemType: Type, itemId: ID, qty: Qty})}, JSONFormat.Compact))`.
+- Danh sách dòng: `colUse` (giống `colIng`, khác ở chỗ không có `Role`). **Cùng cơ chế số liệu cũ như mục 4.6**: `AvailAt`, làm mới 45 giây/trước khi lưu, `colChanged`, cập nhật từ `varRes.lines`, gợi ý chai khác.
+- Gọi `'LAB-F03 RecordUsage'.Run(JSON({requestId, client: fxClient, purpose, reportNo, reportUrl, testName, sampleCode, usedDate, note, lines: ForAll(colUse, {itemType: Type, itemId: ID, qty: Qty})}, JSONFormat.Compact))`.
 - Gợi ý nhập nhanh: sau khi quét một mã từ `scrDetail`, màn này mở sẵn dòng đầu (`pPreload`).
 
 ### 4.8 `scrTrace` — Truy xuất (yêu cầu 4)
@@ -555,8 +643,15 @@ ClearCollect(
     )
 );
 
-// btnPrint.OnSelect
-Print()
+// btnPrint.OnSelect — in, rồi báo nhật ký. Print() không cho app biết giấy có ra thật hay không,
+// nên ta ghi "người dùng đã bấm in" (LAB-F06; lần in lại của cùng một mã được flow tự đánh dấu Important)
+Print();
+IfError(
+    'LAB-F06 LogEvent'.Run(JSON(
+        {requestId: GUID(), client: fxClient, event: "LABEL.PRINT", entityType: "", codes: Concat(colLabels, Code, ","), note: ""},
+        JSONFormat.Compact)),
+    Notify("Không ghi được nhật ký in nhãn. Nếu lặp lại, hãy báo Admin.", NotificationType.Warning)
+)
 ```
 
 **Mã vạch Code 39 tạo ngay trong app (không gọi dịch vụ ngoài).** Thêm bảng ký tự vào `App.Formulas` (đủ cho các ký tự có trong mã `IN-yy-nnnnn` / `PC-yy-nnnnn`; mỗi ký tự là 9 phần tử vạch/khoảng, `w` = rộng, `n` = hẹp):
@@ -623,30 +718,87 @@ LookUp(colLabelBars, Code = ThisItem.Code).Img
 
 ### 4.10 `scrAdmin` — Quản trị (chỉ `fxIsAdmin`)
 
-Tab: **Danh mục hoá chất · Vị trí · Cấu hình · Vai trò · Nhật ký**. CRUD danh mục/vị trí ghi trực tiếp bằng `Patch` (Admin có quyền *Contribute* trên các list này); **không có nút xoá** — chỉ "Ngừng sử dụng" (`IsActive = false`). Form hoá chất có ô **Lượng tồn chuẩn** và **Ngưỡng cảnh báo (%)** (placeholder "mặc định 20%"); `PeakQty` chỉ hiển thị, kèm nút "Đặt lại về tồn hiện tại" cho Admin. Nhật ký là Gallery đọc `LabAudit`, lọc theo thời gian, đối tượng, kết quả.
+Tab: **Danh mục hoá chất · Vị trí · Cấu hình · Vai trò**. (Nhật ký có màn riêng `scrAudit`, mục 4.12, vì cả Reviewer cũng xem được.) **Mọi lưu đều gọi `LAB-F05`** — Admin chỉ có quyền đọc các list này, không có `Patch` nào, nên không thể sửa mà không để lại dấu vết. Mỗi form có ô **Lý do** (bắt buộc khi sửa/ngừng dùng) và hiện rõ "thay đổi này sẽ được ghi nhật ký". Không có nút xoá — chỉ "Ngừng sử dụng" (`isActive = false`). Form hoá chất có ô **Lượng tồn chuẩn** và **Ngưỡng cảnh báo (%)** (placeholder "mặc định 20%"); `PeakQty` chỉ hiển thị, kèm nút "Đặt lại về tồn hiện tại" (`PeakReset`). Ô **Đơn vị gốc** bị khoá khi hoá chất đã có chai (flow cũng chặn). Tab Vai trò: nhắc "nhớ thêm/bớt người này trong nhóm SharePoint LabChem *"; không cho tự hạ quyền chính mình hoặc bỏ Admin cuối cùng (flow chặn, app chỉ báo trước).
 
 ```powerfx
-// Thêm hoá chất vào danh mục
-Patch(LabCatalog, Defaults(LabCatalog), {
-    Title: Trim(txtCatName.Value), CasNumber: Trim(txtCas.Value),
-    ChemType: {Value: ddChemType.Selected.Value}, BaseUnit: {Value: ddBaseUnit.Selected.Value},
-    HazardClass: ForAll(cmbHazard.SelectedItems, {Value: Value}),
-    ParLevelQty: If(IsBlank(txtPar.Value), Blank(), Value(txtPar.Value)),   // lượng tồn chuẩn (mốc 100%)
-    LowStockPct: If(IsBlank(txtPct.Value), Blank(), Value(txtPct.Value)),   // để trống = dùng mặc định cfgLowPct
-    IsActive: true
-})
+// btnSaveCat.OnSelect — lưu hoá chất. KHÔNG dùng Patch(LabCatalog, …)
+Set(varBusy, true);
+Set(varRes, Blank());
+IfError(
+    Set(varRes, 'LAB-F05 AdminData'.Run(JSON(
+        {
+            requestId: varReqId, client: fxClient, action: "CatalogSave",
+            id: Coalesce(varCatEdit.ID, 0), reason: Trim(txtCatReason.Value),
+            fields: {
+                name: Trim(txtCatName.Value), casNumber: Trim(txtCas.Value),
+                chemType: ddChemType.Selected.Value, baseUnit: ddBaseUnit.Selected.Value,
+                hazardClass: Concat(cmbHazard.SelectedItems, Value, ";"),
+                parLevelQty: Text(txtPar.Value),     // lượng tồn chuẩn (mốc 100%); để trống = ""
+                lowStockPct: Text(txtPct.Value),     // để trống = dùng mặc định cfgLowPct
+                isActive: tglCatActive.Checked
+            }
+        },
+        JSONFormat.Compact))),
+    Notify("Không nhận được phản hồi từ máy chủ. Hãy bấm lại — hệ thống sẽ không ghi trùng.", NotificationType.Error)
+);
+Set(varBusy, false);
+// xử lý varRes.state như mục 4.4
 ```
+
+Các tab khác dùng cùng khuôn: `action = "LocationSave"` · `"SettingSet"` (`key`, `value`) · `"RoleSet"` (`email`, `role`, `isActive`, `displayName`) · `"PeakReset"`.
 
 ### 4.11 `scrNoAccess`
 
-Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ cấp quyền (email Admin từ `LabSettings`), không hiện dữ liệu nào.
+Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ cấp quyền (email Admin từ `LabSettings`), không hiện dữ liệu nào. Khi mở màn này, app báo `LAB-F06` sự kiện `ACCESS.DENIED` (flow giới hạn 1 dòng/giờ/người):
+
+```powerfx
+// scrNoAccess.OnVisible
+IfError('LAB-F06 LogEvent'.Run(JSON({requestId: GUID(), client: fxClient, event: "ACCESS.DENIED", entityType: "", codes: "", note: ""}, JSONFormat.Compact)), Blank())
+```
+
+### 4.12 `scrAudit` — Nhật ký kiểm toán (`fxCanAudit`: Admin, Reviewer)
+
+Chỉ đọc, ghi rõ "Chỉ thêm — không sửa, không xoá". Mục đích: trả lời nhanh "ai làm gì, khi nào, vì sao" mà không phải mở SharePoint.
+
+- **Bộ lọc:** khoảng thời gian (24 giờ · 7 ngày [mặc định] · 30 ngày · tuỳ chọn), Mức (Tất cả · Critical · Important), Kết quả (Tất cả · Rejected · Error), Người (email), Mã đối tượng, Hành động, `RequestId`.
+- **Lối tắt:** "Sự kiện Critical 30 ngày" · "Bị từ chối / lỗi" · "Cảnh báo toàn vẹn" (`INTEGRITY.ALERT`) · "Yêu cầu bị gián đoạn" (`REQUEST.INTERRUPTED`).
+- **Danh sách:** giờ · hành động (nhãn tiếng Việt) · đối tượng · người + vai trò lúc đó · badge kết quả · badge mức · lý do rút gọn.
+- **Khung chi tiết** (bấm một dòng): hai cột **Trước / Sau**, `Detail` đã định dạng, nguồn (`App` / `ClientReport` / `Scheduled`), `ClientInfo`, `RunId`, và nút **"Xem cả yêu cầu"** lọc theo `RequestId`: hiện `Started` → các dòng đối tượng → kết thúc, cùng các dòng sổ cái mang `RequestId` đó.
+- Không có xuất file trong app: lưu trữ định kỳ làm theo runbook ([05 §4](05-Bao-mat-va-Kiem-thu.md)).
+
+```powerfx
+// scrAudit.OnVisible — ghi lại việc mở nhật ký (sự kiện do app báo)
+Set(varFrom, DateAdd(Now(), -7, TimeUnit.Days));
+IfError('LAB-F06 LogEvent'.Run(JSON({requestId: GUID(), client: fxClient, event: "AUDIT.VIEW", entityType: "", codes: "", note: ""}, JSONFormat.Compact)), Blank());
+
+// galAudit.Items — chỉ dùng cột có index (Created, ActorEmail, EntityCode, RequestId) và sắp theo ID: không vướng ngưỡng 5.000
+Sort(
+    Filter(
+        LabAudit,
+        Created >= varFrom,
+        IsBlank(varSev)    || Severity.Value = varSev,
+        IsBlank(varResult) || Result.Value = varResult,
+        IsBlank(txtActor.Value)  || StartsWith(ActorEmail, Lower(Trim(txtActor.Value))),
+        IsBlank(txtEntity.Value) || StartsWith(EntityCode, Upper(Trim(txtEntity.Value))),
+        IsBlank(txtReq.Value)    || RequestId = Trim(txtReq.Value)
+    ),
+    ID, SortOrder.Descending
+)
+
+// Khung "Xem cả yêu cầu": các dòng sổ cái cùng RequestId
+Sort(Filter(LabLedger, RequestId = galAudit.Selected.RequestId), ID, SortOrder.Ascending)
+```
+
+Kết quả luôn giới hạn 2.000 dòng mới nhất (Data row limit) — thu hẹp bằng bộ lọc; app hiện dòng "Chỉ hiển thị 2.000 dòng mới nhất" khi chạm giới hạn.
 
 ## 5. Trạng thái rỗng, đang tải, lỗi
 
 - **Rỗng:** mọi danh sách có thông điệp và nút hành động (ví dụ "Chưa có chai nào — Nhập hoá chất").
 - **Đang tải/đang ghi:** khi `varBusy` bật thì khoá nút và hiện spinner; không bao giờ để nút bấm được hai lần.
 - **Lỗi nghiệp vụ:** thông báo tiếng Việt từ `varRes.message`, đặt ngay cạnh vùng thao tác (không chỉ toast).
-- **Lỗi kết nối:** giữ nguyên dữ liệu đã nhập, cho thử lại với cùng `requestId`.
+- **Số liệu đã cũ:** mỗi con số "còn lại" kèm giờ xem; tự làm mới khi form còn mở; khi đổi thì báo rõ "400 → 100 mL" thay vì lặng lẽ đổi số; bị từ chối thì cập nhật dòng đó và gợi ý chai khác — không bắt người dùng tải lại hay quét lại.
+- **Lỗi kết nối / quá thời gian:** giữ nguyên dữ liệu đã nhập, cho thử lại với cùng `requestId` (không bao giờ ghi trùng).
+- **Phản hồi `Rejected`:** sinh `requestId` mới; **`Busy`/`Interrupted`/`Error`:** giữ nguyên và hiện mã tham chiếu (bảng ở mục 4.4).
 - Dùng `Notify` cho phản hồi nhẹ; hộp thoại xác nhận riêng cho thao tác không thể hoàn tác (Dispose, Void).
 
 ## 6. Quét mã vạch / QR — tóm tắt
@@ -695,3 +847,11 @@ Hiện khi `fxRole = "None"`: giải thích ngắn, nêu người liên hệ c�
 6. `Print()` trên trình duyệt đích và máy in nhãn thực tế.
 7. Công thức Code 39 (`Sequence`, `Index`, `Concat`) chạy đúng trong Studio và `Image` hiển thị SVG dạng `data:`; thử quét nhãn in thật bằng máy Zebra.
 8. `colStock` dựng từ `colCatalog` với `Filter(colActive, …)` lồng trong `ForAll` cho kết quả đúng với dữ liệu thật.
+9. Tên output của từng flow sau khi gắn vào app: `success`, `state`, `message`, `codes`, `ref`; `varRes.state` đọc được như text.
+10. `Filter(LabAudit, … Severity.Value = varSev …)` (lọc theo cột Choice) không phát sinh cảnh báo delegation; `Created >= varFrom` dùng được khi cột `Created` đã đánh index.
+11. Người dùng **không có quyền đọc `LabAudit`** (Analyst, Viewer): việc app có `LabAudit` làm nguồn dữ liệu không gây lỗi khi mở app (chỉ truy vấn khi vào `scrAudit`/tab Nhật ký, vốn bị ẩn với họ).
+12. `JSON()` với bản ghi lồng nhau (`fields: {…}` ở mục 4.10) và với giá trị trống (`Text(txtPar.Value)` cho ra `""`); schema `Parse JSON` của F05 chấp nhận chuỗi hoặc số.
+13. `Concat(colLabels, Code, ",")` và việc gọi `Print()` rồi flow trong cùng `OnSelect` (mục 4.9).
+14. `Refresh(LabLots)` rồi `LookUp(LabLots, ID = …)` trả số **mới nhất** từ SharePoint (không trả bản lưu tạm của app); thời gian của một lần làm mới với tối đa 30 dòng.
+15. `Timer` trong màn có `Repeat = true` chỉ chạy khi form đang hiện và dừng khi rời màn; `ForAll` + `UpdateIf` + `Collect` trong cùng `OnTimerEnd` không gây cảnh báo.
+16. `Table(ParseJSON(varRes.lines))` và `Text(l.Value.code)` / `Value(l.Value.available)` đọc đúng chuỗi JSON `lines` do flow trả.

@@ -13,6 +13,7 @@ $listTitle = @{
     LabPrepItems = '5. LabPrepItems — Thành phần của mỗi lần pha'; LabLedger = '6. LabLedger — Sổ cái xuất/nhập'
     LabTestUsage = '7. LabTestUsage — Liên kết biên bản thử nghiệm'; LabAudit = '8. LabAudit — Nhật ký kiểm toán'
     LabRoles = '9. LabRoles — Phân quyền nghiệp vụ'; LabSettings = '10. LabSettings — Cấu hình'
+    LabRequests = '11. LabRequests — Sổ nhận yêu cầu (chống chạy trùng)'
 }
 function Cell([string]$s) { ($s -replace '\|', '\|') }
 
@@ -62,13 +63,14 @@ $doc = @"
 ## 1. Nguyên tắc thiết kế
 
 1. **Sổ cái là nguồn sự thật cho lượng còn lại.** Mọi biến động ghi thành một dòng ``LabLedger`` (chỉ thêm, không sửa/xoá). ``RemainingQty`` trên ``LabLots``/``LabPreps`` chỉ là bản cache để hiển thị nhanh, được flow tính lại từ sổ cái. Nhờ vậy có thể kiểm toán và tự sửa lỗi lệch số.
-2. **App chỉ đọc, flow mới ghi.** Người dùng chỉ có quyền *Read* trên các list nghiệp vụ; mọi thao tác thay đổi tồn kho đi qua Power Automate (tài khoản dịch vụ) có kiểm tra phía server. Xem [05](05-Bao-mat-va-Kiem-thu.md).
+2. **App chỉ đọc, flow mới ghi.** Người dùng — kể cả Admin — chỉ có quyền *Read* trên các list; mọi thay đổi (tồn kho, danh mục, vị trí, cấu hình, vai trò) đi qua Power Automate (tài khoản dịch vụ) có kiểm tra phía server và để lại nhật ký. Xem [05](05-Bao-mat-va-Kiem-thu.md).
 3. **Không xoá.** Sai thì điều chỉnh/đảo bút toán có lý do; list không cấp quyền Delete cho ai ngoài Owner.
 4. **Quan hệ bằng ``ID`` (Number) + mã snapshot (Text), không dùng Lookup column.** Tránh giới hạn 12 cột lookup/view của SharePoint và việc lọc theo lookup không delegable trong Power Apps. Đổi lại, tính toàn vẹn tham chiếu do flow bảo đảm (chỉ flow ghi nên đủ an toàn).
 5. **Snapshot tên/hãng/số lô** vào bản ghi con để hồ sơ truy xuất không đổi khi danh mục bị chỉnh sửa về sau (yêu cầu của truy xuất nguồn gốc).
 6. **Enum máy dùng khoá tiếng Anh** (``Status``, ``TxnType``...), app ánh xạ sang nhãn tiếng Việt và màu — logic không phụ thuộc chuỗi có dấu.
 7. **Mỗi chai/đơn vị vật lý = một dòng ``LabLots`` = một mã QR.** Đăng ký 10 chai cùng lô tạo 10 dòng.
 8. **Mọi số lượng lưu theo đơn vị gốc** của hoá chất (g, mL hoặc pcs); đổi đơn vị (mg, kg, µL, L) làm ở giao diện nhập.
+9. **Nhật ký đầy đủ, không thể bỏ qua.** Mỗi yêu cầu để lại: một dòng ``LabRequests`` (nhận yêu cầu, duy nhất theo ``RequestId``) → dòng ``LabAudit`` *Started* (ghi **trước** khi làm; ghi không được thì không làm) → một dòng ``LabAudit`` cho **từng đối tượng bị đổi** (kèm giá trị trước/sau và lý do) → dòng kết thúc *Success/Rejected/Error*. Mọi bản ghi do yêu cầu tạo ra mang ``RequestId`` nên dựng lại được toàn bộ dấu vết. Danh tính người thực hiện là **email dạng văn bản** lấy từ phía server, không phải cột Người. Chi tiết: [03 §2.5–2.7](03-Power-Automate.md).
 
 ## 2. Sơ đồ quan hệ
 
@@ -84,6 +86,9 @@ erDiagram
     LabPreps    ||--o{ LabLedger     : "ItemID, ItemType=Prep"
     LabLots     ||--o{ LabTestUsage  : "ItemID, ItemType=Lot"
     LabPreps    ||--o{ LabTestUsage  : "ItemID, ItemType=Prep"
+    LabRequests ||--o{ LabAudit      : "RequestId (Started … kết thúc)"
+    LabRequests ||--o{ LabLedger     : "RequestId (dấu vết)"
+    LabRequests ||--o{ LabLots       : "RequestId (dấu vết)"
 ``````
 
 **Chuỗi truy xuất:** Biên bản thử nghiệm ← ``LabTestUsage`` ← dung dịch pha (``LabPreps``) ← ``LabPrepItems`` ← chai đầu vào (``LabLots``, kèm số lô NSX + COA) — và đệ quy nếu thành phần lại là một dung dịch pha khác (dung dịch gốc → dung dịch làm việc).
@@ -121,7 +126,7 @@ Flow luôn kiểm tra ``Unit`` của giao dịch khớp ``Unit`` của đối t�
 | Mã | Quy tắc |
 |---|---|
 | BR-01 | ``RemainingQty`` = Σ ``QtyDelta`` của ``LabLedger`` theo (``ItemType``, ``ItemID``). |
-| BR-02 | Số dư không được âm: giao dịch làm số dư < 0 bị từ chối và ghi ``LabAudit`` (Result = Rejected). |
+| BR-02 | Số dư không được âm: giao dịch làm số dư < 0 bị từ chối và ghi ``LabAudit`` (Result = Rejected). Dòng sổ cái đã ghi **không bao giờ bị sửa**; sai thì ghi dòng ``Reversal``/``Adjust`` mới. |
 | BR-03 | Chỉ được dùng (pha / thử nghiệm) đối tượng có ``Status`` ∈ {Available, InUse}, ``ExpiryDate`` ≥ ngày giao dịch, ``IsVoid`` = false; dung dịch pha còn phải có ``ReviewStatus`` ≠ Rejected. Quarantine / Empty / Expired / Disposed bị chặn. |
 | BR-04 | ``Unit`` của giao dịch phải bằng ``Unit`` của đối tượng. |
 | BR-05 | Nếu ``EnforcePrepExpiryLimit`` = true: ``ExpiryDate`` dung dịch pha ≤ hạn dùng sớm nhất của các thành phần. |
@@ -131,8 +136,12 @@ Flow luôn kiểm tra ``Unit`` của giao dịch khớp ``Unit`` của đối t�
 | BR-09 | Dùng cho thử nghiệm thì bắt buộc có ``Số biên bản``. |
 | BR-10 | ``Status`` tự động: số dư = 0 → Empty; 0 < số dư < ban đầu → InUse; quá hạn → Expired (job hằng ngày). Chai/dung dịch Expired hoặc Empty vẫn tra cứu và truy xuất được. |
 | BR-11 | Công thức pha (``LabPrepItems``) bất biến sau khi tạo. |
-| BR-12 | Mỗi yêu cầu ghi mang ``RequestId`` (GUID); gửi lại cùng ``RequestId`` trả kết quả cũ, không ghi trùng. |
+| BR-12 | Mỗi yêu cầu ghi mang một ``RequestId`` (GUID cho một *ý định* thao tác). Flow **nhận** ``RequestId`` vào ``LabRequests`` (duy nhất) trước khi làm gì; gửi lại cùng ``RequestId`` không bao giờ chạy lại — trả kết quả đã lưu, báo "đang xử lý", hoặc báo "bị gián đoạn" để Admin kiểm tra. Bị từ chối thì app sinh ``RequestId`` mới cho lần thử sau. |
 | BR-13 | **Cảnh báo sắp hết (cần mua thêm):** với mỗi hoá chất, ``Tổng tồn`` = Σ ``RemainingQty`` của các chai ``Available``/``InUse``/``Quarantine`` (hàng đã nhập nhưng đang chờ kiểm vẫn tính là có hàng, để không mua trùng). ``Mốc 100%`` = ``ParLevelQty`` nếu có, ngược lại ``PeakQty``. ``Ngưỡng`` = ``LowStockPct`` của hoá chất nếu có, ngược lại ``DefaultLowStockPct``. Cảnh báo khi ``Tổng tồn < Mốc 100% × Ngưỡng / 100`` (kể cả khi đã hết sạch). Riêng từng chai đang dùng: tô vàng khi ``RemainingQty / InitialQty × 100 < Ngưỡng``. |
+| BR-14 | **Không có nhật ký thì không có thao tác (fail-closed).** Flow ghi ``LabAudit`` *Started* trước khi thay đổi bất cứ thứ gì; ghi không được thì dừng, không đổi dữ liệu. Mọi yêu cầu — kể cả bị từ chối, của người không có vai trò, hay gặp lỗi — có đủ dòng *Started* và một dòng kết thúc. |
+| BR-15 | Mọi bản ghi do flow tạo (``LabLots``, ``LabPreps``, ``LabPrepItems``, ``LabLedger``, ``LabTestUsage``) mang ``RequestId``; sổ cái và nhật ký mang ``ActorEmail`` do server xác định. Mỗi đối tượng bị đổi có dòng ``LabAudit`` riêng; hành động mức *Critical* bắt buộc có lý do và giá trị trước/sau. |
+| BR-16 | Danh mục, vị trí, cấu hình và vai trò **chỉ** đổi qua ``LAB-F05``: Admin, có lý do, ghi trước/sau. Không đổi đơn vị gốc của hoá chất đã có chai; không tự hạ quyền chính mình; không bỏ Admin cuối cùng. |
+| BR-17 | Nhật ký (``LabAudit``) và sổ cái (``LabLedger``) chỉ thêm: tài khoản flow không có quyền sửa/xoá. Dòng bị sửa, bị xoá hoặc khoảng trống bất thường bị ``LAB-S03`` phát hiện và báo Admin. |
 
 ## 6. Cấu hình mặc định (``LabSettings``)
 
@@ -144,7 +153,8 @@ $seed
 
 - Ước tính tham khảo: 3.000 chai + 2.000 dung dịch/năm → ``LabLedger`` ~ 40.000 dòng/năm. SharePoint chứa tới 30 triệu item/list; ngưỡng 5.000 chỉ chặn truy vấn **không có index** → các cột lọc/sắp xếp đều đã đánh index.
 - App đặt *Data row limit* = 2.000 và chỉ dùng hàm delegable (``Filter``, ``StartsWith``, ``LookUp``, ``Sort`` theo cột index). KPI dạng đếm (``CountRows``) chính xác đến 2.000 kết quả/phép lọc; nếu số chai đang quản lý vượt ngưỡng này thì chuyển KPI sang snapshot do flow hằng ngày ghi vào ``LabSettings``.
-- Mỗi list tối đa 20 cột index (hiện dùng ≤ 8).
+- Mỗi list tối đa 20 cột index (hiện dùng ≤ 9).
+- ``LabAudit`` lớn nhanh nhất: mỗi yêu cầu để lại từ 3 dòng (Started + đối tượng + kết thúc) đến khoảng 25 dòng (nhập 20 chai) → ước tính **50.000–150.000 dòng/năm** cho quy mô vài trăm thao tác/ngày. Vẫn xa giới hạn 30 triệu, nhưng truy vấn trong app phải lọc theo cột có index (``Created``, ``EntityCode``, ``ActorEmail``, ``RequestId``) và sắp theo ``ID``; xuất lưu trữ hằng tháng, lưu trữ theo năm (xem [05 §4](05-Bao-mat-va-Kiem-thu.md)).
 - Lưu trữ dài hạn: theo quy định hồ sơ của phòng lab (ví dụ ISO/IEC 17025 thường yêu cầu giữ hồ sơ nhiều năm) — chưa xác nhận với anh, xem câu hỏi mở trong [01](01-Thiet-ke-tong-the.md).
 
 ---

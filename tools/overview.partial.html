@@ -30,6 +30,8 @@
     <div class="lane"><h3>Làm thử nghiệm</h3><ol class="steps"><li>Mở "Ghi nhận sử dụng"</li><li>Nhập số biên bản (và link nếu có)</li><li>Quét các dung dịch/chai đã dùng, nhập lượng</li><li>Lưu: tự trừ tồn và gắn vào biên bản</li></ol></div>
     <div class="lane"><h3>Truy xuất</h3><ol class="steps"><li>Quét mã dung dịch hoặc chai</li><li>Xem nguồn gốc (tối đa 3 cấp pha)</li><li>Xem danh sách biên bản đã dùng, mở từng biên bản</li></ol></div>
   </div>
+  <h3>Hai người cùng dùng một chai</h3>
+  <div class="callout key"><b>Con số trên màn hình chỉ là ảnh chụp lúc mở.</b> Khi A và B cùng thấy chai còn 400 mL, A lưu trước và dùng 300 mL, thì lúc B lưu hệ thống <b>tính lại từ sổ cái</b> chứ không tin con số B đang thấy. Không đủ thì từ chối <b>kèm con số mới và gợi ý chai khác còn đủ</b>; B chỉ cần sửa lượng hoặc chọn chai khác rồi lưu lại, <b>không phải quét lại</b>. Màn hình cũng tự làm mới mỗi khoảng 45 giây và báo "400 → 100 mL" trước khi B bấm Lưu. Pha nhiều thành phần mà một thành phần không đủ thì cả lần pha bị từ chối, không thành phần nào bị trừ.<br>Nếu thực tế đã rót rồi mới ghi vào app mà bị từ chối "không đủ" thì sổ sách đã lệch: báo Admin điều chỉnh tồn có lý do. Cần anh cho biết lab ghi <b>trước</b> hay <b>sau</b> khi rót (câu hỏi 18).</div>
 </section>
 
 <section id="zebra">
@@ -117,7 +119,7 @@
 
 <section id="du-lieu">
   <h2><span class="num">7</span>Dữ liệu lưu ở đâu</h2>
-  <p>Mười SharePoint List. Nguyên tắc chính: <b>lượng còn lại luôn tính từ sổ cái xuất/nhập</b>, không ai sửa số trực tiếp; <b>không xoá</b>, sai thì ghi bút toán đảo có lý do.</p>
+  <p>Mười một SharePoint List. Nguyên tắc chính: <b>lượng còn lại luôn tính từ sổ cái xuất/nhập</b>, không ai sửa số trực tiếp; <b>không xoá</b>, sai thì ghi bút toán đảo có lý do.</p>
   <div class="cards three compact">
     <article class="card"><h3 class="mono sm">LabCatalog</h3><p>Danh mục hoá chất, đơn vị gốc, lượng tồn chuẩn, ngưỡng cảnh báo.</p></article>
     <article class="card"><h3 class="mono sm">LabLocations</h3><p>Vị trí lưu trữ (phòng, tủ, ngăn).</p></article>
@@ -126,8 +128,9 @@
     <article class="card"><h3 class="mono sm">LabPrepItems</h3><p>Công thức thực tế của mỗi lần pha (thành phần, lượng, số lô).</p></article>
     <article class="card"><h3 class="mono sm">LabLedger</h3><p>Sổ cái xuất/nhập. Nguồn sự thật cho lượng còn lại.</p></article>
     <article class="card"><h3 class="mono sm">LabTestUsage</h3><p>Nối biên bản thử nghiệm với hoá chất đã dùng.</p></article>
-    <article class="card"><h3 class="mono sm">LabAudit</h3><p>Nhật ký kiểm toán: ai làm gì, thành công hay bị từ chối.</p></article>
-    <article class="card"><h3 class="mono sm">LabRoles · LabSettings</h3><p>Phân quyền nghiệp vụ và cấu hình (ngưỡng mặc định, QR, nhãn…).</p></article>
+    <article class="card"><h3 class="mono sm">LabAudit</h3><p>Nhật ký kiểm toán chỉ thêm: ai, khi nào, vì sao, trước/sau — kể cả thao tác bị từ chối (mục 10).</p></article>
+    <article class="card"><h3 class="mono sm">LabRequests</h3><p>Sổ nhận yêu cầu: mỗi thao tác một mã, chặn ghi trùng.</p></article>
+    <article class="card"><h3 class="mono sm">LabRoles · LabSettings</h3><p>Phân quyền nghiệp vụ và cấu hình (ngưỡng mặc định, QR, nhãn…). Chỉ đổi qua một flow riêng có nhật ký.</p></article>
   </div>
 </section>
 
@@ -140,7 +143,7 @@
       <tr><td>Nhập hoá chất, pha chế, ghi nhận sử dụng</td><td>✔</td><td>✔</td><td></td><td></td></tr>
       <tr><td>Duyệt dung dịch pha, Release hoá chất kiểm nhập</td><td>✔</td><td></td><td>✔</td><td></td></tr>
       <tr><td>Điều chỉnh tồn, huỷ bỏ, vô hiệu</td><td>✔</td><td></td><td></td><td></td></tr>
-      <tr><td>Danh mục, vị trí, cấu hình, vai trò</td><td>✔</td><td></td><td></td><td></td></tr>
+      <tr><td>Danh mục, vị trí, cấu hình, vai trò (qua flow riêng, bắt buộc lý do, có nhật ký trước/sau)</td><td>✔</td><td></td><td></td><td></td></tr>
       <tr><td>Xem nhật ký kiểm toán</td><td>✔</td><td></td><td>✔</td><td></td></tr>
     </tbody>
   </table></div>
@@ -149,17 +152,85 @@
 <section id="an-toan">
   <h2><span class="num">9</span>An toàn dữ liệu</h2>
   <ul class="checks">
-    <li><b>Người dùng chỉ đọc, flow mới ghi.</b> Không ai sửa trực tiếp số lượng trên SharePoint; mọi thay đổi đi qua flow có kiểm tra.</li>
+    <li><b>Người dùng — kể cả Admin — chỉ đọc, flow mới ghi.</b> Không ai sửa trực tiếp số lượng, danh mục, cấu hình hay vai trò trên SharePoint; mọi thay đổi đi qua flow có kiểm tra và để lại nhật ký.</li>
     <li><b>Kiểm tra lặp lại ở phía máy chủ.</b> Ẩn nút trong app chỉ để dễ dùng; quyền và quy tắc nghiệp vụ (đủ tồn, còn hạn, đúng đơn vị) được kiểm lại ở flow.</li>
     <li><b>Danh tính lấy từ hệ thống</b>, không tin email do app gửi lên.</li>
-    <li><b>Chống ghi trùng</b> khi bấm hai lần hoặc mất mạng giữa chừng.</li>
-    <li><b>Sổ cái và nhật ký chỉ thêm</b>, không sửa, không xoá; đối soát hằng đêm so số dư với sổ cái.</li>
+    <li><b>Chống ghi trùng</b> khi bấm hai lần, gọi song song hoặc mất mạng giữa chừng: mỗi thao tác có một mã yêu cầu được nhận vào sổ trước khi làm.</li>
+    <li><b>Không có nhật ký thì không có thao tác:</b> flow ghi dấu vết trước khi đổi dữ liệu (mục 10).</li>
+    <li><b>Sổ cái và nhật ký chỉ thêm</b>, không sửa, không xoá; đối soát hằng đêm so số dư với sổ cái, và một flow riêng canh việc sửa/xoá ngoài app.</li>
     <li><b>Chỉ nhận link https</b> cho biên bản và COA, có thể giới hạn theo tên miền.</li>
   </ul>
 </section>
 
+<section id="nhat-ky">
+  <h2><span class="num">10</span>Nhật ký kiểm toán — không thể bỏ qua</h2>
+  <p>Mọi thay đổi trong hệ thống để lại dấu vết đầy đủ, để trả lời được <b>ai làm gì, khi nào, vì sao, đổi từ gì sang gì</b> — kể cả những thao tác bị từ chối hay chết giữa chừng.</p>
+  <div class="cards three compact">
+    <article class="card"><div class="tag">Ghi trước</div><h3>Không có nhật ký thì không có thao tác</h3><p>Flow ghi dòng "Started" <b>trước</b> khi đổi bất cứ thứ gì. Nếu SharePoint không ghi được nhật ký, thao tác bị dừng và không có dữ liệu nào đổi.</p></article>
+    <article class="card"><div class="tag">Đủ cặp</div><h3>Mọi yêu cầu có đầu và cuối</h3><p>Kể cả bị từ chối, của người không có quyền, hay gặp lỗi. Mỗi chai/dung dịch bị đổi có một dòng riêng kèm <b>giá trị trước/sau</b> và <b>lý do</b>.</p></article>
+    <article class="card"><div class="tag">Truy được</div><h3>Biết ai, khi nào, vì sao</h3><p>Danh tính là email do máy chủ xác định (không tin app gửi lên), kèm vai trò lúc đó. Một mã yêu cầu nối nhật ký, sổ cái và mọi bản ghi được tạo ra.</p></article>
+  </div>
+  <h3>Màn Nhật ký (Admin và Reviewer)</h3>
+  <div class="shots">
+    <figure><img src="{{img:mockup-audit}}" alt="Danh sách nhật ký kiểm toán với bộ lọc theo mức và kết quả"><figcaption><b>Danh sách nhật ký</b> — lọc theo mức Critical, bị từ chối/lỗi, cảnh báo toàn vẹn.</figcaption></figure>
+    <figure><img src="{{img:mockup-audit-detail}}" alt="Chi tiết một dòng nhật ký: lý do, trước và sau, toàn bộ yêu cầu"><figcaption><b>Chi tiết một dòng</b> — lý do, giá trị trước/sau, và toàn bộ các bước của yêu cầu đó.</figcaption></figure>
+  </div>
+  <h3>Ghi những gì</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Sự kiện</th><th>Ghi gì</th><th>Mức</th></tr></thead>
+    <tbody>
+      <tr><td>Nhập chai, pha dung dịch, ghi nhận sử dụng</td><td>Một dòng cho mỗi chai/dung dịch; dung dịch kèm công thức, sử dụng kèm số biên bản</td><td>Info – Important</td></tr>
+      <tr><td>Điều chỉnh, huỷ, vô hiệu tồn</td><td>Lý do + mã lý do + trước/sau; <b>email ngay</b> cho người nhận cảnh báo</td><td><span class="pill red">Critical</span></td></tr>
+      <tr><td>Release, duyệt dung dịch pha</td><td>Ai quyết định, trạng thái trước/sau</td><td>Important</td></tr>
+      <tr><td>Sửa danh mục, vị trí, <b>cấu hình, vai trò</b></td><td>Chỉ qua một flow riêng; lý do + trước/sau. Cấp quyền Admin hoặc nới một kiểm soát = email ngay</td><td><span class="pill red">Critical</span></td></tr>
+      <tr><td>Bị từ chối, người không có quyền, lỗi hệ thống</td><td>Ghi đủ, kể cả với tài khoản lạ</td><td>Important</td></tr>
+      <tr><td>In nhãn / in lại, mở màn Nhật ký</td><td>Do app báo; in lại cùng một mã được đánh dấu</td><td>Info – Important</td></tr>
+      <tr><td>Việc chạy định kỳ</td><td>Từng chai bị đánh dấu hết hạn, từng chỗ đối soát sửa lệch</td><td>Info – Important</td></tr>
+      <tr><td>Cảnh báo toàn vẹn</td><td>Dòng nhật ký/sổ cái bị sửa hoặc xoá, đổi nhóm quản trị, yêu cầu thiếu đầu hoặc cuối</td><td><span class="pill red">Critical</span></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Chống sửa, chống xoá, và có người đọc</h3>
+  <ul class="checks">
+    <li>Tài khoản flow chỉ có quyền <b>thêm</b> vào nhật ký và sổ cái; không ai (kể cả Admin) ghi trực tiếp.</li>
+    <li>Mỗi đêm một flow kiểm tra: dòng bị sửa, dòng bị xoá, đổi nhóm quản trị, yêu cầu thiếu đầu hoặc cuối.</li>
+    <li>Bật <b>Purview audit</b> và <b>xuất lưu trữ hằng tháng kèm mã băm</b>: bằng chứng nằm ngoài tầm tay của tài khoản dịch vụ.</li>
+    <li>Email báo cáo hằng ngày liệt kê sự kiện Critical; <b>không thấy email trong ngày là tín hiệu</b> cần hỏi ngay.</li>
+    <li>Hằng tháng một Reviewer (không phải người thao tác) <b>rà soát và ký xác nhận</b> — nhật ký không ai đọc thì không có tác dụng kiểm soát.</li>
+  </ul>
+  <div class="callout warn"><b>Giới hạn cần biết:</b> nhật ký ghi <i>thay đổi và quyết định</i>, <b>không ghi từng lượt xem</b> (người có quyền đọc có thể đọc trực tiếp trên SharePoint, app không chặn được). Sự kiện do app báo (in nhãn…) có thể bị bỏ qua, và app chỉ biết "đã bấm in" chứ không biết giấy có ra thật. Owner của site vẫn sửa/xoá được — hệ thống <b>phát hiện</b> chứ không ngăn tuyệt đối. Toàn bộ phần này <b>chưa chạy thử</b> trên SharePoint/Power Automate thật; các giả định cần xác nhận ở tài liệu 03, mục 14.</div>
+</section>
+
+<section id="ra-soat">
+  <h2><span class="num">11</span>Kết quả rà soát thiết kế</h2>
+  <p>Em rà soát lại toàn bộ thiết kế như một người làm bảo mật, kiểm toán, phân tích nghiệp vụ và kiểm thử. Kết luận: khung thiết kế <b>đúng hướng</b> nhưng <b>nhật ký chưa đủ cho kiểm toán</b> — có thao tác để lại không một dấu vết, và cách chống ghi trùng có khe hở. Phần nhật ký đã được sửa trong thiết kế (mục 10); phần còn lại cần anh quyết.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Phát hiện</th><th>Số lượng</th></tr></thead>
+    <tbody>
+      <tr><td>Mức <span class="pill red">Cao</span></td><td>6</td></tr>
+      <tr><td>Mức <span class="pill amber">Trung bình</span></td><td>19</td></tr>
+      <tr><td>Mức <span class="pill green">Thấp</span></td><td>6</td></tr>
+      <tr><td>Tính năng nên có thêm</td><td>6</td></tr>
+      <tr><td><b>Đã sửa trong thiết kế</b> · giảm nhẹ một phần · ghi nhận · <b>chờ anh quyết</b></td><td>18 · 2 · 2 · 9</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Sáu điểm nặng nhất</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Mã</th><th>Phát hiện</th><th>Tình trạng</th></tr></thead>
+    <tbody>
+      <tr><td>RS-01</td><td>Admin sửa danh mục, cấu hình và <b>cả vai trò</b> bằng ghi trực tiếp: cấp quyền Admin cho ai đó <b>không để lại nhật ký</b>, và quyền đang cấp còn cho phép xoá.</td><td><span class="pill green">Đã sửa</span> — mọi sửa đổi qua một flow riêng, Admin chỉ đọc</td></tr>
+      <tr><td>RS-02</td><td>Nhật ký chỉ ghi ở <b>cuối</b> flow: flow chết giữa chừng thì dữ liệu đã đổi mà không có dòng nhật ký nào.</td><td><span class="pill green">Đã sửa</span> — ghi trước, làm sau</td></tr>
+      <tr><td>RS-03</td><td>Chống ghi trùng chỉ kiểm "đã thành công chưa": hai lần gọi song song đều lọt, và gửi lại sau khi flow chết giữa chừng sẽ <b>tạo trùng toàn bộ chai</b>.</td><td><span class="pill green">Đã sửa</span> — sổ nhận yêu cầu duy nhất theo mã</td></tr>
+      <tr><td>RS-04</td><td>Danh tính chỉ là cột "Người": có thể không ghi được cho tài khoản lạ, và hiển thị tên <i>hiện tại</i> thay vì lúc đó.</td><td><span class="pill green">Đã sửa</span> — email văn bản bất biến + vai trò lúc đó</td></tr>
+      <tr><td>RS-15</td><td>Admin tự điều chỉnh/huỷ/vô hiệu tồn, kể cả chai mình dùng, <b>không ai duyệt</b>.</td><td><span class="pill amber">Giảm nhẹ</span> (lý do + email ngay + rà soát); <b>chờ anh quyết</b> có cần người thứ hai duyệt</td></tr>
+      <tr><td>RS-21</td><td>Hạn dùng được kiểm theo <b>ngày người dùng nhập</b>: ghi lùi ngày là dùng được hoá chất đã hết hạn.</td><td><span class="pill amber">Giảm nhẹ</span> (ghi lệch ngày vào nhật ký); <b>chờ anh quyết</b> luật ghi bù</td></tr>
+    </tbody>
+  </table></div>
+  <p>Danh sách đầy đủ 37 phát hiện (kể cả hoá chất không có hạn dùng, biên bản có sau khi dùng, dung dịch chưa duyệt, tách nhiệm, tính năng nên thêm) và đối chiếu ALCOA+ ở <b>tài liệu 06</b>.</p>
+  <div class="callout ask"><b>Em cần anh quyết:</b> (1) cho ghi bù ngày tối đa mấy ngày, hạn dùng kiểm theo ngày nào; (2) Admin tự điều chỉnh tồn hay cần người thứ hai duyệt khi vượt ngưỡng; (3) một người có được giữ hai vai trò (Analyst + Reviewer) không; (4) dung dịch chưa duyệt có được dùng không; (5) biên bản có thể ra sau khi dùng hoá chất không; (6) có hoá chất không có hạn dùng không; (7) thời gian lưu nhật ký và ai rà soát hằng tháng; (8) có cần ghi cả lượt xem không.</div>
+</section>
+
 <section id="rui-ro">
-  <h2><span class="num">10</span>Rủi ro và hạn chế chính</h2>
+  <h2><span class="num">12</span>Rủi ro và hạn chế chính</h2>
   <div class="tw"><table>
     <thead><tr><th>Mã</th><th>Rủi ro</th><th>Mức</th><th>Xử lý</th></tr></thead>
     <tbody>
@@ -168,14 +239,18 @@
       <tr><td>R-05</td><td>Cần môi trường có Dataverse để dùng Solution và child flow</td><td><span class="pill amber">Trung bình</span></td><td>Hỏi IT; có phương án thay thế</td></tr>
       <tr><td>R-07</td><td>Biên bản nằm ngoài hệ thống, link có thể hỏng khi đổi tên/di chuyển file</td><td><span class="pill amber">Trung bình</span></td><td>Số biên bản là khoá chính, link chỉ là tiện ích</td></tr>
       <tr><td>R-01</td><td>Hai người trừ cùng một chai trong vài giây có thể đua nhau</td><td><span class="pill green">Thấp</span></td><td>Kiểm tra lại sau khi ghi, đối soát hằng đêm</td></tr>
-      <tr><td>R-04</td><td>Vai trò duy trì ở hai nơi (danh sách vai trò và nhóm SharePoint) dễ lệch</td><td><span class="pill amber">Trung bình</span></td><td>Quy trình cấp quyền; giai đoạn 2 tự đồng bộ</td></tr>
+      <tr><td>R-04</td><td>Vai trò duy trì ở hai nơi (danh sách vai trò và nhóm SharePoint) dễ lệch</td><td><span class="pill amber">Trung bình</span></td><td>Quy trình cấp quyền; flow giám sát báo khi lệch; giai đoạn 2 tự đồng bộ</td></tr>
+      <tr><td>R-09</td><td>Owner của site vẫn sửa/xoá được dữ liệu và nhật ký (đã nâng từ Thấp lên Trung bình)</td><td><span class="pill amber">Trung bình</span></td><td>Flow giám sát phát hiện sửa/xoá, Purview audit, xuất lưu trữ hằng tháng kèm mã băm</td></tr>
+      <tr><td>R-13</td><td>Nhật ký không ghi lượt xem dữ liệu; sự kiện do app báo có thể bị bỏ qua</td><td><span class="pill amber">Trung bình</span></td><td>Nói rõ phạm vi; Purview cho truy cập site; cần quyết định nếu bắt buộc ghi lượt xem</td></tr>
+      <tr><td>R-14</td><td>Các kiểm tra của flow giám sát dựa trên thuộc tính SharePoint chưa kiểm chứng trên môi trường thật</td><td><span class="pill amber">Trung bình</span></td><td>Danh sách xác nhận ở tài liệu 03, mục 14; chạy ca T-AU-11…13 trước khi dùng thật</td></tr>
+      <tr><td>R-15</td><td>Chiếm được tài khoản dịch vụ thì có thể tắt flow giám sát hoặc ghi nhật ký giả</td><td><span class="pill amber">Trung bình</span></td><td>Email hằng ngày (mất email là tín hiệu); Purview nằm ngoài tầm tài khoản dịch vụ; quyền tối thiểu</td></tr>
     </tbody>
   </table></div>
-  <p class="muted">Danh sách đầy đủ (R-01 đến R-12) ở phần tài liệu 05.</p>
+  <p class="muted">Danh sách đầy đủ (R-01 đến R-16) ở phần tài liệu 05.</p>
 </section>
 
 <section id="cau-hoi">
-  <h2><span class="num">11</span>Câu hỏi cần anh trả lời</h2>
+  <h2><span class="num">13</span>Câu hỏi cần anh trả lời</h2>
   <ol class="plain">
     <li><b>Biên bản thử nghiệm</b> trong phòng lab gọi là gì và lưu ở đâu? (mục 6)</li>
     <li><b>Máy quét Zebra</b> là model nào (LS2208, DS2208, DS2278…), nối USB hay Bluetooth, nối với PC chạy trình duyệt hay Power Apps for Windows? <b>Máy in nhãn</b> và <b>kích thước nhãn</b>?</li>
@@ -188,30 +263,37 @@
     <li><b>Đơn vị</b> khác (mol, %, đương lượng) hoặc hàng đếm theo cái?</li>
     <li>Cần <b>ảnh cảnh báo nguy hiểm (GHS)</b> trên nhãn và kiểm soát hoá chất đặc biệt không?</li>
     <li><b>Ngôn ngữ:</b> chỉ tiếng Việt hay song ngữ?</li>
-    <li><b>Hạn dùng sau khi mở nắp:</b> hoá chất/dung môi nào có hạn ngắn hơn và có cần quản lý riêng không? (mục 13, G2)</li>
-    <li><b>Quy mô kho hiện tại:</b> khoảng bao nhiêu chai đang có? (mục 13, G3)</li>
+    <li><b>Hạn dùng sau khi mở nắp:</b> hoá chất/dung môi nào có hạn ngắn hơn và có cần quản lý riêng không? (mục 15, G2)</li>
+    <li><b>Quy mô kho hiện tại:</b> khoảng bao nhiêu chai đang có? (mục 15, G3)</li>
+    <li><b>Nhật ký:</b> phải lưu bao lâu, ai (Reviewer nào, không phải người thao tác) rà soát hằng tháng, có Purview Audit không?</li>
+    <li>Có cần ghi cả <b>lượt xem</b> hồ sơ (ví dụ với chất đặc biệt) không? SharePoint không đảm bảo được việc này ở cấp dữ liệu.</li>
+    <li><b>Ghi bù ngày:</b> cho nhập thao tác đã xảy ra từ hôm qua đến mấy ngày, có bắt buộc lý do không, hạn dùng kiểm theo ngày thực xảy ra hay ngày nhập? (mục 11)</li>
+    <li><b>Điều chỉnh tồn của Admin:</b> tự làm được, hay cần người thứ hai duyệt khi vượt ngưỡng? (mục 11)</li>
+    <li><b>Thứ tự làm việc:</b> người dùng ghi vào app <b>trước</b> khi rót/pha hay <b>sau</b> khi đã rót xong? (mục 3; quyết định có cần giữ chỗ G11 không)</li>
   </ol>
 </section>
 
 <section id="kiem-thu">
-  <h2><span class="num">12</span>Kiểm thử và nghiệm thu</h2>
-  <p>Có <b>65 ca kiểm thử</b>. Mỗi yêu cầu chỉ được coi là đạt khi các ca của nó đạt <b>trên thiết bị thật của phòng lab</b>.</p>
+  <h2><span class="num">14</span>Kiểm thử và nghiệm thu</h2>
+  <p>Có <b>92 ca kiểm thử</b>. Mỗi yêu cầu chỉ được coi là đạt khi các ca của nó đạt <b>trên thiết bị thật của phòng lab</b>.</p>
   <div class="tw"><table>
     <thead><tr><th>Nhóm</th><th>Số ca</th><th>Ví dụ</th></tr></thead>
     <tbody>
-      <tr><td>Nhập hoá chất</td><td>10</td><td>Hạn dùng trước ngày nhận bị từ chối; bấm Lưu hai lần chỉ tạo một bộ bản ghi</td></tr>
+      <tr><td>Nhập hoá chất</td><td>11</td><td>Hạn dùng trước ngày nhận bị từ chối; bấm Lưu hai lần chỉ tạo một bộ bản ghi; ngày hạn dùng không lệch một ngày</td></tr>
       <tr><td>Pha chế</td><td>9</td><td>Lỗi giữa chừng thì hoàn lại tồn nguồn; người duyệt không được trùng người pha</td></tr>
       <tr><td>Lượng còn lại và cảnh báo</td><td>10</td><td>Còn 190 mL báo cần mua, còn 210 mL không báo; hết sạch vẫn nằm trong danh sách cần mua</td></tr>
       <tr><td>Sử dụng và truy xuất</td><td>8</td><td>Gắn hai dung dịch vào một biên bản; truy xuôi qua 3 cấp pha</td></tr>
       <tr><td>Quét mã</td><td>9</td><td>Máy Zebra có và không có phím Enter; máy 1D đọc mã vạch, máy 2D đọc QR; bộ gõ tiếng Việt đang bật</td></tr>
       <tr><td>Bảo mật</td><td>12</td><td>Viewer gọi thẳng flow bị từ chối; không sửa được số lượng trên SharePoint</td></tr>
-      <tr><td>Hiệu năng và dễ dùng</td><td>7</td><td>5.000 chai, tìm kiếm dưới 3 giây; người mới nhập lô và pha dung dịch trong 5 phút</td></tr>
+      <tr><td>Hiệu năng và dễ dùng</td><td>8</td><td>5.000 chai, tìm kiếm dưới 3 giây; nhật ký 100.000 dòng vẫn lọc dưới 3 giây; người mới nhập lô và pha dung dịch trong 5 phút</td></tr>
+      <tr><td><b>Nhiều người cùng thao tác</b></td><td>7</td><td>A lưu trước thì B (đang thấy số cũ) bị từ chối kèm số mới và không phải quét lại; hai người lưu cùng lúc thì số dư không bao giờ âm; pha nhiều thành phần mà một thành phần không đủ thì không thành phần nào bị trừ</td></tr>
+      <tr><td><b>Nhật ký kiểm toán</b></td><td>18</td><td>Ngắt flow giữa chừng vẫn có dấu vết và không tạo trùng; khoá quyền ghi nhật ký thì thao tác bị dừng; Owner sửa/xoá một dòng bị phát hiện; dựng lại cả đời sống một chai trong 10 phút</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <section id="goi-y">
-  <h2><span class="num">13</span>Gợi ý mở rộng</h2>
+  <h2><span class="num">15</span>Gợi ý mở rộng</h2>
   <p>Các gợi ý dưới đây là <b>đề xuất để anh chọn</b>, chưa nằm trong thiết kế chính. Ba mục đầu là <b>chỗ thiếu của thiết kế hiện tại</b>.</p>
   <h3>Nên đưa vào giai đoạn 1</h3>
   <div class="tw"><table>
@@ -231,34 +313,36 @@
     <li><b>G8 · Nút "Tạo đề nghị mua"</b> từ cảnh báo sắp hết, để khép vòng "chuẩn bị mua thêm".</li>
     <li><b>G9 · Xuất hồ sơ truy xuất ra PDF</b> (đưa lên sớm hơn giai đoạn 2): đánh giá viên thường muốn xem hồ sơ này.</li>
     <li><b>G10 · Chia chai</b> (rót dung môi sang chai nhỏ, mỗi chai nhỏ có nhãn riêng), dùng lại luồng pha chế.</li>
+    <li><b>G11 · Giữ chỗ lượng khi đang nhập</b> ("còn 400, đang được giữ 150 bởi B"): chỉ có ý nghĩa nếu lab ghi vào app <i>trước</i> khi rót; em chưa khuyên làm ở giai đoạn đầu.</li>
   </ul>
   <h3>Để sau, tuỳ nhu cầu</h3>
   <p>Ảnh cảnh báo nguy hiểm (GHS) và cảnh báo hoá chất không tương thích cùng tủ · dự báo "đủ dùng bao nhiêu tuần" · giá và thống kê chi phí · hàng đợi "chờ gửi" khi mất mạng.</p>
-  <div class="callout key"><b>Em khuyên:</b> chọn <b>G1–G6</b> cho giai đoạn 1 thay vì làm hết. Mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên <b>một tủ thí điểm</b> có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn. Chi tiết thay đổi dữ liệu, flow, màn hình cho từng mục ở tài liệu 01, mục 8.</div>
+  <div class="callout key"><b>Em khuyên:</b> chọn <b>G1–G6</b> cho giai đoạn 1 thay vì làm hết. Mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên <b>một tủ thí điểm</b> có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G11 làm sau khi thí điểm ổn. Chi tiết thay đổi dữ liệu, flow, màn hình cho từng mục ở tài liệu 01, mục 8.</div>
   <div class="callout ask"><b>Em cần anh quyết:</b> (1) hoá chất nào có hạn dùng ngắn hơn sau khi mở nắp và có cần quản lý riêng không; (2) kho hiện có khoảng bao nhiêu chai (quyết định công sức nạp tồn đầu kỳ và dán nhãn).</div>
 </section>
 
 <section id="lo-trinh">
-  <h2><span class="num">14</span>Lộ trình triển khai</h2>
+  <h2><span class="num">16</span>Lộ trình triển khai</h2>
   <ol class="timeline">
-    <li><b>Chốt câu hỏi mở</b> (mục 11), xin môi trường, tài khoản dịch vụ, nhóm bảo mật.</li>
-    <li><b>Dựng dữ liệu:</b> chạy script tạo 10 list, nạp danh mục, vị trí, vai trò, tách quyền.</li>
-    <li><b>Nhập hoá chất + sổ cái:</b> flow nhập và cổng ghi sổ cái, kiểm thử.</li>
+    <li><b>Chốt câu hỏi mở</b> (mục 13), xin môi trường, tài khoản dịch vụ, nhóm bảo mật.</li>
+    <li><b>Dựng dữ liệu:</b> chạy script tạo 11 list, nạp danh mục, vị trí, vai trò, tách quyền.</li>
+    <li><b>Nhật ký, nhập hoá chất, sổ cái:</b> cổng ghi nhật ký và sổ nhận yêu cầu <b>dựng đầu tiên</b>, rồi flow nhập và cổng ghi sổ cái; kiểm thử cả ngắt giữa chừng.</li>
     <li><b>App giai đoạn 1:</b> khung điều hướng, Trang chủ, Quét mã, Tồn kho, Chi tiết, Nhập hoá chất, In nhãn. <i>Người dùng bắt đầu dùng được ở bước này.</i></li>
     <li><b>Pha chế, ghi nhận sử dụng, truy xuất</b> cùng các flow tương ứng.</li>
-    <li><b>Quản trị, cảnh báo, đối soát</b>, rà soát bảo mật, UAT, chạy thử hai tuần với dữ liệu thật.</li>
+    <li><b>Quản trị qua flow, màn Nhật ký, cảnh báo, đối soát, giám sát toàn vẹn</b>; rà soát bảo mật, UAT, chạy thử hai tuần với dữ liệu thật, rà soát nhật ký lần đầu.</li>
   </ol>
 </section>
 
 <section id="trang-thai">
-  <h2><span class="num">15</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
+  <h2><span class="num">17</span>Đã kiểm tra gì, chưa kiểm tra gì</h2>
   <div class="tw"><table>
     <thead><tr><th>Hạng mục</th><th>Trạng thái</th></tr></thead>
     <tbody>
-      <tr><td>Schema và script tạo list SharePoint</td><td><span class="pill green">Đã kiểm tra cú pháp</span> và sinh/phân tích XML của 99 cột. <b>Chưa chạy trên SharePoint thật.</b></td></tr>
+      <tr><td>Schema và script tạo list SharePoint</td><td><span class="pill green">Đã kiểm tra cú pháp</span> và sinh/phân tích XML của 121 cột (11 list). <b>Chưa chạy trên SharePoint thật.</b></td></tr>
       <tr><td>Mã vạch Code 39</td><td><span class="pill green">Đã kiểm chứng</span> bằng bộ giải mã ZXing. Công thức Power Fx tạo mã vạch chưa chạy trong Studio; chưa thử với máy Zebra thật.</td></tr>
       <tr><td>Mockup giao diện</td><td><span class="pill green">Đã mở và chụp ảnh</span> các màn chính trên máy tính; bản màn hình hẹp đã kiểm tra ở bề rộng 500 px.</td></tr>
       <tr><td>Công thức Power Fx và các flow</td><td><span class="pill amber">Chưa chạy</span> trong Power Apps / Power Automate (chưa có môi trường). Danh sách điểm cần xác nhận ở tài liệu 04, mục 10.</td></tr>
+      <tr><td>Thiết kế nhật ký kiểm toán và rà soát</td><td><span class="pill amber">Mới rà soát bằng suy luận</span>; chưa chạy thử. Cơ chế nhận yêu cầu duy nhất, phát hiện xoá/sửa và header danh tính cần xác nhận trên môi trường thật (tài liệu 03, mục 14).</td></tr>
       <tr><td>Máy quét Zebra</td><td><span class="pill amber">Chưa thử.</span> Cách hoạt động dựa trên đặc tính chung của máy quét kiểu bàn phím và tài liệu Microsoft; cần thử bằng đúng model.</td></tr>
     </tbody>
   </table></div>

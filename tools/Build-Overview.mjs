@@ -27,7 +27,7 @@ const tocOverview = [...overview.matchAll(/<section id="([\w-]+)">\s*<h2><span c
 // ---- các tài liệu md
 const docsDir = path.join(root, 'docs');
 const mdFiles = fs.readdirSync(docsDir).filter(f => /^\d\d-.*\.md$/.test(f)).sort();
-const shortTitle = { '01': 'Thiết kế tổng thể', '02': 'Mô hình dữ liệu', '03': 'Power Automate (flow)', '04': 'Power Apps (màn hình, công thức)', '05': 'Bảo mật, rủi ro, kiểm thử' };
+const shortTitle = { '01': 'Thiết kế tổng thể', '02': 'Mô hình dữ liệu', '03': 'Power Automate (flow)', '04': 'Power Apps (màn hình, công thức)', '05': 'Bảo mật, rủi ro, kiểm thử', '06': 'Rà soát thiết kế' };
 
 const details = [];
 const tocDocs = [];

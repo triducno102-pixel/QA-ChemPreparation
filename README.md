@@ -4,15 +4,16 @@ Thiết kế ứng dụng đăng ký hoá chất đầu vào, đăng ký pha ch�
 
 ## Đọc theo thứ tự
 
-**Khó đọc file .md? Mở [LabChem-TongQuan.html](LabChem-TongQuan.html) bằng trình duyệt** — một trang gồm phần tổng quan dễ đọc (kèm ảnh giao diện) và toàn bộ 5 tài liệu bên dưới (bấm để mở từng cái).
+**Khó đọc file .md? Mở [LabChem-TongQuan.html](LabChem-TongQuan.html) bằng trình duyệt** — một trang gồm phần tổng quan dễ đọc (kèm ảnh giao diện) và toàn bộ 6 tài liệu bên dưới (bấm để mở từng cái).
 
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/01-Thiet-ke-tong-the.md](docs/01-Thiet-ke-tong-the.md) | Phạm vi, ánh xạ 5 yêu cầu → tính năng, kiến trúc, luồng nghiệp vụ, quyết định thiết kế, lộ trình |
-| [docs/02-Mo-hinh-du-lieu.md](docs/02-Mo-hinh-du-lieu.md) | 10 SharePoint list, từng cột, quy tắc nghiệp vụ, mã QR (sinh tự động từ schema) |
-| [docs/03-Power-Automate.md](docs/03-Power-Automate.md) | 7 flow: bước chi tiết, biểu thức, xử lý lỗi, chống ghi trùng |
-| [docs/04-Power-Apps.md](docs/04-Power-Apps.md) | Design tokens, 11 màn hình, công thức Power Fx |
-| [docs/05-Bao-mat-va-Kiem-thu.md](docs/05-Bao-mat-va-Kiem-thu.md) | Phân quyền, mối đe doạ, rủi ro, danh sách go-live, 65 ca kiểm thử, câu hỏi mở |
+| [docs/02-Mo-hinh-du-lieu.md](docs/02-Mo-hinh-du-lieu.md) | 11 SharePoint list, từng cột, quy tắc nghiệp vụ BR-01…17, mã QR (sinh tự động từ schema) |
+| [docs/03-Power-Automate.md](docs/03-Power-Automate.md) | 11 flow (F01–F06, C01–C02, S01–S03): bước chi tiết, **khối ghi nhật ký bắt buộc**, danh mục sự kiện, chống ghi trùng, giám sát toàn vẹn |
+| [docs/04-Power-Apps.md](docs/04-Power-Apps.md) | Design tokens, 12 màn hình (kể cả Nhật ký), công thức Power Fx |
+| [docs/05-Bao-mat-va-Kiem-thu.md](docs/05-Bao-mat-va-Kiem-thu.md) | Phân quyền, mối đe doạ, rủi ro, danh sách go-live, 92 ca kiểm thử (18 ca về nhật ký, 7 ca nhiều người cùng thao tác), câu hỏi mở |
+| [docs/06-Ra-soat-thiet-ke.md](docs/06-Ra-soat-thiet-ke.md) | **Rà soát bảo mật · kiểm toán · nghiệp vụ**: 37 phát hiện, tình trạng xử lý, đối chiếu ALCOA+, các điểm cần anh quyết |
 | [mockup/index.html](mockup/index.html) | Giao diện tham chiếu — mở bằng trình duyệt (cần mạng để vẽ QR thật; không có mạng thì dùng hình thay thế) |
 
 ## Triển khai
@@ -26,18 +27,19 @@ Thiết kế ứng dụng đăng ký hoá chất đầu vào, đăng ký pha ch�
    ./sharepoint/New-LabChemLists.ps1 -SiteUrl … -ClientId <guid> `
        -ApplyPermissions -ServiceAccountUpn <svc-labchem@…>       # tách quyền: chỉ đọc cho người dùng
    ```
-3. Dựng flow theo [03](docs/03-Power-Automate.md) (trong một Solution), rồi app theo [04](docs/04-Power-Apps.md).
-4. Chạy bộ kiểm thử ở [05 §6](docs/05-Bao-mat-va-Kiem-thu.md) trước khi mở cho người dùng.
+3. Dựng flow theo [03](docs/03-Power-Automate.md) (trong một Solution; **`LAB-C02` ghi nhật ký và `LabRequests` làm đầu tiên**), rồi app theo [04](docs/04-Power-Apps.md).
+4. Chạy bộ kiểm thử ở [05 §6](docs/05-Bao-mat-va-Kiem-thu.md) — đặc biệt nhóm **T-AU (nhật ký)**, kể cả ngắt giữa chừng và sửa/xoá ngoài app — trước khi mở cho người dùng.
 
 ## Trạng thái hiện tại — đã kiểm tra gì, chưa kiểm tra gì
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Schema + script SharePoint | Đã kiểm tra cú pháp PowerShell và sinh/parse XML của 99 cột (`-DryRun`). **Chưa chạy trên SharePoint thật.** |
+| Schema + script SharePoint | Đã kiểm tra cú pháp PowerShell và sinh/parse XML của 121 cột, 11 list (`-DryRun`). **Chưa chạy trên SharePoint thật** (kể cả việc đánh index `Created`/`Modified` và bỏ quyền `DeleteVersions`). |
 | Mã vạch Code 39 trên nhãn | Thuật toán đã kiểm chứng bằng bộ giải mã ZXing. Công thức Power Fx chưa chạy trong Studio; chưa thử với máy Zebra thật. |
 | `docs/02` | Sinh từ schema nên khớp script. |
 | Mockup | Đã mở bằng trình duyệt headless và xem ảnh chụp các màn chính. |
-| Công thức Power Fx, flow | **Chưa chạy** trong Power Apps/Power Automate (chưa có tenant/environment). Danh sách điểm cần xác nhận ở [04 §10](docs/04-Power-Apps.md). |
+| Công thức Power Fx, flow | **Chưa chạy** trong Power Apps/Power Automate (chưa có tenant/environment). Danh sách điểm cần xác nhận ở [04 §10](docs/04-Power-Apps.md) và [03 §14](docs/03-Power-Automate.md). |
+| Nhật ký kiểm toán, rà soát | Thiết kế sau khi **rà soát bằng suy luận** ([06](docs/06-Ra-soat-thiet-ke.md)); chưa chạy thử. Cơ chế nhận yêu cầu duy nhất, phát hiện sửa/xoá và danh tính người gọi cần xác nhận trên tenant thật trước khi tin. |
 | QR | Mặc định dùng dịch vụ công cộng **chỉ để chạy thử**; phải thay trước go-live (rủi ro R-03). |
 
 ## Cấu trúc thư mục
@@ -46,6 +48,6 @@ Thiết kế ứng dụng đăng ký hoá chất đầu vào, đăng ký pha ch�
 sharepoint/  LabChem.Schema.ps1 (nguồn sự thật)  ·  New-LabChemLists.ps1
 tools/       Build-DataModelDoc.ps1  — sinh lại docs/02 sau khi sửa schema
              Build-Overview.mjs      — sinh LabChem-TongQuan.html (cd tools && npm install && node Build-Overview.mjs)
-docs/        01…05
-mockup/      index.html
+docs/        01…06
+mockup/      index.html  (kể cả màn Nhật ký: #audit)
 ```

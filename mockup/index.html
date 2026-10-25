@@ -313,6 +313,7 @@ const TRACE = {
 /* ============ tiện ích ============ */
 const P = {
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+ log:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h4M9 12h6M9 16h6"/>',
  scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M4 12h16"/>',
  box:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
  plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
@@ -372,11 +373,11 @@ function label(code, name, l2, l3){
 }
 
 /* ============ khung điều hướng ============ */
-const NAV = [['home','Trang chủ','home'],['scan','Quét mã','scan'],['inventory','Tồn kho','box'],['lot','Nhập hoá chất','plus'],['prep','Pha chế','flask'],['trace','Truy xuất','route'],['admin','Quản trị','sliders']];
+const NAV = [['home','Trang chủ','home'],['scan','Quét mã','scan'],['inventory','Tồn kho','box'],['lot','Nhập hoá chất','plus'],['prep','Pha chế','flask'],['trace','Truy xuất','route'],['audit','Nhật ký','log'],['admin','Quản trị','sliders']];
 let view = 'home';
 const state = {tab:'lot', q:'', status:'', step:2};
 function nav(){
-  document.getElementById('nav').innerHTML = NAV.map(([k,t,i]) => (k==='admin'?'<div class="sep"></div>':'') + `<button class="${k===view?'on':''} ${k==='admin'?'adm':''}" onclick="go('${k}')" aria-label="${t}" ${k===view?'aria-current="page"':''}>${I(i)}<span>${t}</span></button>`).join('');
+  document.getElementById('nav').innerHTML = NAV.map(([k,t,i]) => (k==='audit'?'<div class="sep"></div>':'') + `<button class="${k===view?'on':''} ${(k==='admin'||k==='audit')?'adm':''}" onclick="go('${k}')" aria-label="${t}" ${k===view?'aria-current="page"':''}>${I(i)}<span>${t}</span></button>`).join('');
 }
 function go(v, arg){ view = v; closeDrawer(); nav(); const el = document.getElementById('page'); el.innerHTML = (V[v] || V.home)(arg); document.querySelector('.main').scrollTop = 0; if (AFTER[v]) AFTER[v](arg); }
 function open_(code){ const o = find(code); if (!o) { toast('Không tìm thấy mã ' + code); return; } drawer(o, 'ledger'); }
@@ -627,9 +628,62 @@ function traceBody(c){
   </div>`;
 }
 
+/* ---- Nhật ký kiểm toán (chỉ Admin, Reviewer) ---- */
+const ACT = {'LOT.ADJUST':'Điều chỉnh tồn (chai)','LOT.RELEASE':'Release hoá chất kiểm nhập','PREP.CREATE':'Tạo dung dịch pha','PREP.REVIEW':'Duyệt dung dịch pha','USAGE.RECORD':'Ghi nhận sử dụng',
+ 'ACCESS.DENIED':'Bị từ chối quyền','LABEL.PRINT':'In nhãn','REQUEST.END':'Kết thúc yêu cầu','JOB.RUN':'Chạy định kỳ','INTEGRITY.ALERT':'Cảnh báo toàn vẹn','ROLE.SET':'Đổi vai trò','LOT.REGISTER':'Đăng ký chai'};
+const SEV = {Info:'muted',Important:'warning',Critical:'danger'};
+const RES = {Success:'success',Rejected:'danger',Error:'danger',Warning:'warning',Started:'info'};
+const AUDIT = [
+ {t:'2026-10-24 09:31',a:'LOT.ADJUST',ent:'IN-26-00057',who:'Hoàng Minh E',role:'Admin',res:'Success',sev:'Critical',why:'Kiểm đếm lại: còn 2.500 mL, không phải 2.520 mL',
+  before:'{"RemainingQty":2520,"Status":"InUse"}',after:'{"RemainingQty":2500,"Status":"InUse"}',src:'App',flow:'LAB-F04 AdminAction',req:'3f2b9c1e-7a41-4d0e-9b55-0c6a1e2d84f7',
+  detail:'{"ledgerDelta":-20,"reasonCode":"CountCorrection"}',
+  chain:[['09:31:05','REQUEST.START','Started · nhận yêu cầu, ghi payload'],['09:31:06','Sổ cái','Adjust −20 mL · IN-26-00057 · cùng RequestId'],['09:31:07','LOT.ADJUST','Critical · trước/sau/lý do'],['09:31:07','REQUEST.END','Success'],['09:31:08','Email','Gửi tới AlertEmails (mức Critical)']]},
+ {t:'2026-10-24 09:05',a:'ACCESS.DENIED',ent:'',who:'tran.van.f@contoso.com',role:'None',res:'Rejected',sev:'Important',why:'Vai trò None không được phép LAB-F01 RegisterIncoming',
+  before:'',after:'',src:'App',flow:'LAB-F01 RegisterIncoming',req:'a91d0c52-33be-4f6a-8d17-5be0c4e7a210',detail:'{"state":"Rejected"}'},
+ {t:'2026-10-24 07:00',a:'JOB.RUN',ent:'',who:'system:LAB-S01',role:'—',res:'Success',sev:'Info',why:'',before:'',after:'',src:'Scheduled',flow:'LAB-S01 DailyExpiryStock',req:'—',
+  detail:'{"expired":0,"expiringSoon":2,"lowStock":2,"criticalEvents24h":1}'},
+ {t:'2026-10-24 03:30',a:'INTEGRITY.ALERT',ent:'LabLedger #1432',who:'system:LAB-S03',role:'—',res:'Warning',sev:'Critical',why:'',
+  before:'',after:'',src:'Scheduled',flow:'LAB-S03 IntegrityWatch',req:'—',detail:'Dòng sổ cái bị sửa sau khi tạo 3 ngày (Modified By: owner@contoso.com). Bản cũ còn trong version history.'},
+ {t:'2026-10-23 15:20',a:'USAGE.RECORD',ent:'PC-26-00031',who:'Phạm Văn D',role:'Analyst',res:'Success',sev:'Info',why:'',before:'',after:'{"reportNo":"BB-2026-0161","qty":50,"unit":"mL"}',src:'App',flow:'LAB-F03 RecordUsage',req:'7c40e6a8-1d92-4b3a-a0f5-92d1c5e63b08',detail:'{}'},
+ {t:'2026-10-23 14:02',a:'LABEL.PRINT',ent:'PC-26-00031',who:'Nguyễn Văn A',role:'Analyst',res:'Success',sev:'Important',why:'',before:'',after:'',src:'ClientReport',flow:'LAB-F06 LogEvent',req:'e5b1f0d3-9a6c-4e72-8c14-2fa7d09b4c61',detail:'{"reprint":true,"clientReported":true}'},
+ {t:'2026-10-22 17:00',a:'REQUEST.END',ent:'IN-26-00033',who:'Phạm Văn D',role:'Analyst',res:'Rejected',sev:'Info',why:'IN-26-00033: đã hết hạn (10/10/2026)',before:'',after:'',src:'App',flow:'LAB-F03 RecordUsage',req:'0d83a2f7-6b15-4c9e-b3a8-71e4d5c0f926',detail:'{"state":"Rejected"}'},
+ {t:'2026-10-21 10:10',a:'LOT.RELEASE',ent:'IN-26-00070',who:'Lê Văn C',role:'Reviewer',res:'Success',sev:'Important',why:'',before:'{"Status":"Quarantine"}',after:'{"Status":"Available"}',src:'App',flow:'LAB-F04 AdminAction',req:'b6a97c14-52d0-4f8b-9e3a-c18d2f705a4e',detail:'{}'},
+ {t:'2026-10-20 16:00',a:'PREP.REVIEW',ent:'PC-26-00031',who:'Lê Văn C',role:'Reviewer',res:'Success',sev:'Important',why:'',before:'{"ReviewStatus":"Pending"}',after:'{"ReviewStatus":"Approved","ReviewedBy":"Lê Văn C"}',src:'App',flow:'LAB-F04 AdminAction',req:'4e19d7b0-83fa-4a26-8b5c-d60a3e91f287',detail:'{}'},
+ {t:'2026-10-20 11:00',a:'PREP.CREATE',ent:'PC-26-00031',who:'Trần Thị B',role:'Analyst',res:'Success',sev:'Important',why:'',before:'',after:'{"prepName":"HCl 0,1 N (làm việc)","finalQty":1000,"unit":"mL","items":[{"code":"PC-26-00012","qty":100},{"code":"IN-26-00057","qty":900}]}',src:'App',flow:'LAB-F02 CreatePreparation',req:'d27f6e91-0b38-4a5d-86c2-e3b19a470f5d',detail:'{"touched":["PC-26-00031","PC-26-00012","IN-26-00057"]}'}
+];
+let audFilter = 'all';
+const audPass = e => audFilter==='all' || (audFilter==='crit' && e.sev==='Critical') || (audFilter==='rej' && (e.res==='Rejected'||e.res==='Error')) || (audFilter==='int' && (e.a==='INTEGRITY.ALERT'||e.a==='REQUEST.INTERRUPTED'));
+V.audit = () => `
+  <div class="page-head"><div><h1>Nhật ký kiểm toán</h1><p class="muted" style="margin:0">Chỉ thêm — không sửa, không xoá · dành cho Admin và Reviewer</p></div></div>
+  <div class="toolbar" style="gap:8px">
+    ${[['all','Tất cả'],['crit','Mức Critical'],['rej','Bị từ chối / lỗi'],['int','Cảnh báo toàn vẹn']].map(([k,t]) => `<button class="fchip ${audFilter===k?'on':''}" onclick="audFilter='${k}';go('audit')">${t}</button>`).join('')}
+    <span class="muted" style="font-size:12px;margin-left:auto">7 ngày gần nhất · bấm một dòng để xem trước/sau và cả yêu cầu</span>
+  </div>
+  <div class="tablewrap"><table><thead><tr><th>Thời điểm</th><th>Hành động</th><th>Đối tượng</th><th>Người thực hiện</th><th>Kết quả</th><th>Mức</th><th class="hide-m">Lý do</th></tr></thead><tbody>
+  ${AUDIT.map((e,i) => audPass(e) ? `<tr style="cursor:pointer" onclick="auditOpen(${i})"><td style="white-space:nowrap">${fmt(e.t.slice(0,10))} ${e.t.slice(11)}</td><td><div class="mono" style="font-size:12px">${e.a}</div><div class="muted" style="font-size:12px">${ACT[e.a]||''}</div></td><td class="mono">${e.ent||'—'}</td><td>${e.who}<div class="muted" style="font-size:12px">${e.role} · ${e.src}</div></td><td><span class="badge ${RES[e.res]}">${e.res}</span></td><td><span class="chip ${SEV[e.sev]}">${e.sev}</span></td><td class="hide-m muted" style="max-width:280px">${e.why||''}</td></tr>` : '').join('')}
+  </tbody></table></div>
+  <p class="muted" style="font-size:12px">Mỗi yêu cầu để lại: nhận yêu cầu → <b>Started</b> (ghi trước khi làm) → một dòng cho từng đối tượng bị đổi → dòng kết thúc. Người không có quyền và thao tác bị từ chối cũng được ghi.</p>`;
+function auditOpen(i){
+  const e = AUDIT[i]; const el = document.getElementById('drawer');
+  const chain = e.chain || [[e.t.slice(11)+':00','REQUEST.START','Started'],[e.t.slice(11)+':01',e.a,e.res],[e.t.slice(11)+':01','REQUEST.END',e.res]];
+  const box = v => `<div class="mono" style="font-weight:500;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;min-height:40px">${v||'—'}</div>`;
+  el.innerHTML = `
+   <div class="hd"><div><div class="mono" style="font-size:16px">${e.a}</div><div class="muted" style="font-size:12px">${ACT[e.a]||''}</div></div><span class="chip ${SEV[e.sev]}">${e.sev}</span><button class="x" onclick="closeDrawer()" aria-label="Đóng">${I('x')}</button></div>
+   <div class="bd">
+    <dl class="kv"><dt>Thời điểm</dt><dd>${fmt(e.t.slice(0,10))} ${e.t.slice(11)} (giờ máy chủ)</dd><dt>Người</dt><dd>${e.who}</dd><dt>Vai trò lúc đó</dt><dd>${e.role}</dd><dt>Nguồn</dt><dd>${e.src} · ${e.flow}</dd><dt>Đối tượng</dt><dd>${e.ent||'—'}</dd><dt>Kết quả</dt><dd><span class="badge ${RES[e.res]}">${e.res}</span></dd><dt>RequestId</dt><dd class="mono" style="font-size:12px">${e.req}</dd></dl>
+    ${e.why?`<h3 style="margin-top:16px">Lý do</h3><p style="margin:0">${e.why}</p>`:''}
+    ${(e.before||e.after)?`<h3 style="margin-top:16px">Trước → Sau</h3><div class="row c2"><div><div class="muted" style="font-size:12px;margin-bottom:4px">Trước</div>${box(e.before)}</div><div><div class="muted" style="font-size:12px;margin-bottom:4px">Sau</div>${box(e.after)}</div></div>`:''}
+    <h3 style="margin-top:16px">Chi tiết</h3>${box(e.detail)}
+    <h3 style="margin-top:16px">Toàn bộ yêu cầu</h3>
+    <div class="timeline">${chain.map(c => `<div class="ev"><span class="pt"></span><div><b>${c[1]}</b><div class="muted" style="font-size:12px">${c[0]} · ${c[2]}</div></div></div>`).join('')}</div>
+   </div>
+   <div class="ft"><button class="btn" onclick="toast('Lọc theo RequestId ${e.req.slice(0,8)}… (gồm cả dòng sổ cái cùng RequestId)')">${I('search')}Xem cả yêu cầu</button></div>`;
+  document.getElementById('scrim').classList.add('on'); el.classList.add('on'); el.setAttribute('aria-hidden','false');
+}
+
 V.admin = () => `
-  <div class="page-head"><div><h1>Quản trị</h1><p class="muted" style="margin:0">Chỉ Admin — danh mục, vị trí, cấu hình, vai trò, nhật ký</p></div></div>
-  <div class="tabs">${['Danh mục hoá chất','Vị trí','Cấu hình','Vai trò','Nhật ký'].map((t,i) => `<button class="${i===0?'on':''}">${t}</button>`).join('')}</div>
+  <div class="page-head"><div><h1>Quản trị</h1><p class="muted" style="margin:0">Chỉ Admin — danh mục, vị trí, cấu hình, vai trò · mọi thay đổi đi qua flow, có lý do và được ghi nhật ký</p></div></div>
+  <div class="tabs">${['Danh mục hoá chất','Vị trí','Cấu hình','Vai trò'].map((t,i) => `<button class="${i===0?'on':''}">${t}</button>`).join('')}</div>
   <div class="grid2 split-b" style="margin-bottom:16px">
    <div class="tablewrap"><table><thead><tr><th>Tên hoá chất</th><th>Đơn vị gốc</th><th>Lượng tồn chuẩn</th><th>Ngưỡng cảnh báo</th><th>Tồn cao nhất</th></tr></thead><tbody>
     ${[['Natri hydroxit (NaOH) AR','g','1.000','','1.500'],['Acid clohydric 37% AR','mL','2.000','25%','2.500'],['Methanol HPLC','mL','20.000','','24.000'],['Acetonitrile LC-MS','mL','','','4.000']].map(r => `<tr style="cursor:default"><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2] || '<span class="muted">tự lấy tồn cao nhất</span>'}</td><td>${r[3] || `<span class="muted">mặc định ${DEFAULT_PCT}%</span>`}</td><td class="muted">${r[4]}</td></tr>`).join('')}
@@ -637,10 +691,11 @@ V.admin = () => `
    <div class="card"><h2>Cảnh báo sắp hết</h2>
      <div class="field"><label for="defpct">Ngưỡng mặc định cho mọi hoá chất (%)</label><input id="defpct" type="number" min="1" max="99" value="${DEFAULT_PCT}"><div class="hint">Cảnh báo "cần mua thêm" khi tổng tồn của một hoá chất xuống dưới % này của <b>lượng tồn chuẩn</b>.</div></div>
      <div class="field" style="margin-top:12px"><label>Hoá chất đang chọn: Acid clohydric 37% AR</label><div class="row c2"><input value="2000" aria-label="Lượng tồn chuẩn"><input value="25" aria-label="Ngưỡng riêng (%)"></div><div class="hint">Lượng tồn chuẩn (mL) và ngưỡng riêng (%). Để trống ngưỡng = dùng mặc định.</div></div>
-     <div style="margin-top:12px"><button class="btn primary" onclick="toast('Đã lưu cấu hình cảnh báo (ghi LabSettings / LabCatalog)')">${I('check')}Lưu</button></div>
+     <div class="field" style="margin-top:12px"><label for="why">Lý do thay đổi <span class="req">*</span></label><input id="why" placeholder="Ví dụ: tăng ngưỡng theo kế hoạch mua quý 4"><div class="hint">Ghi vào nhật ký cùng giá trị trước/sau. Admin không sửa trực tiếp được trên SharePoint — chỉ qua flow LAB-F05.</div></div>
+     <div style="margin-top:12px"><button class="btn primary" onclick="toast('Đã gửi LAB-F05 AdminData: lưu cấu hình cảnh báo và ghi nhật ký (trước/sau + lý do)')">${I('check')}Lưu</button></div>
    </div>
   </div>
-  <p class="muted" style="font-size:12px">Không có nút xoá — chỉ “Ngừng sử dụng”. Mọi thay đổi được ghi nhật ký.</p>`;
+  <p class="muted" style="font-size:12px">Không có nút xoá — chỉ “Ngừng sử dụng”. Mọi thay đổi bắt buộc có lý do và được ghi nhật ký (trước/sau).</p>`;
 
 /* ============ khởi động ============ */
 document.getElementById('logo').innerHTML = I('beaker');

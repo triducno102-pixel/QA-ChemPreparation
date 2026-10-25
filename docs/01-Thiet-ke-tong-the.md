@@ -4,7 +4,7 @@
 
 Ứng dụng giúp người làm trong phòng lab **đăng ký, theo dõi và truy xuất hoá chất** thay cho sổ tay/Excel. Dữ liệu nằm trong SharePoint Lists, giao diện bằng Power Apps (Canvas), nghiệp vụ và kiểm soát chạy bằng Power Automate.
 
-**Trong phạm vi giai đoạn 1 (đã thiết kế):** 5 yêu cầu anh nêu + các thành phần bắt buộc để chúng hoạt động đáng tin cậy (phân quyền, sổ cái, nhật ký kiểm toán, cảnh báo hạn dùng và sắp hết theo %, in nhãn có QR + mã vạch).
+**Trong phạm vi giai đoạn 1 (đã thiết kế):** 5 yêu cầu anh nêu + các thành phần bắt buộc để chúng hoạt động đáng tin cậy (phân quyền, sổ cái, **nhật ký kiểm toán đầy đủ — ghi trước, làm sau, mọi yêu cầu kể cả bị từ chối**, cảnh báo hạn dùng và sắp hết theo %, in nhãn có QR + mã vạch).
 
 **Gợi ý mở rộng** (chuyển vị trí, hạn sau mở nắp, nạp tồn đầu kỳ, kiểm kê…): xem mục 8 ở cuối tài liệu này.
 
@@ -47,14 +47,16 @@
 flowchart LR
     U["Người dùng<br/>PC · tablet · điện thoại · máy quét Zebra"] --> PA["Power Apps<br/>Canvas app"]
     PA -- "đọc (quyền của chính người dùng)" --> SP[("SharePoint Lists<br/>Lab*")]
-    PA -- "payload JSON + RequestId" --> F["Power Automate<br/>F01–F04 + C01"]
+    PA -- "payload JSON + RequestId" --> F["Power Automate<br/>F01–F06 + C01, C02"]
     F -- "ghi (tài khoản dịch vụ)" --> SP
-    F --> AU[("LabAudit")]
-    S["Flow định kỳ<br/>S01 hằng ngày · S02 đối soát"] --> SP
+    F --> RQ[("LabRequests<br/>nhận yêu cầu")]
+    F --> AU[("LabAudit<br/>nhật ký, chỉ thêm")]
+    S["Flow định kỳ<br/>S01 hằng ngày · S02 đối soát · S03 toàn vẹn"] --> SP
+    S --> AU
     S --> M["Email cảnh báo"]
 ```
 
-Điểm mấu chốt: **người dùng chỉ đọc, flow mới ghi**. Chi tiết quyền ở [05](05-Bao-mat-va-Kiem-thu.md); dữ liệu ở [02](02-Mo-hinh-du-lieu.md); flow ở [03](03-Power-Automate.md); màn hình/công thức ở [04](04-Power-Apps.md).
+Điểm mấu chốt: **người dùng chỉ đọc (kể cả Admin), flow mới ghi — và flow không bao giờ làm gì trước khi ghi được nhật ký**. Chi tiết quyền ở [05](05-Bao-mat-va-Kiem-thu.md); dữ liệu ở [02](02-Mo-hinh-du-lieu.md); flow ở [03](03-Power-Automate.md); màn hình/công thức ở [04](04-Power-Apps.md).
 
 ## 5. Luồng nghiệp vụ
 
@@ -91,9 +93,10 @@ sequenceDiagram
     U->>A: Quét thành phần, nhập lượng
     A->>A: Kiểm tra tại chỗ (tồn, hạn, trùng, đơn vị)
     A->>F: payload (requestId, thông tin, items)
+    F->>S: Nhận requestId (LabRequests) + LabAudit (Started)
     F->>S: Đọc từng nguồn, kiểm BR-03/04/05
     alt có lỗi
-        F->>S: LabAudit (Rejected)
+        F->>S: LabAudit (kết thúc Rejected)
         F-->>A: success=false + lý do từng thành phần
     else hợp lệ
         F->>S: Tạo LabPreps, cấp mã PC-yy-nnnnn
@@ -103,7 +106,7 @@ sequenceDiagram
             C->>S: Ghi LabLedger, cập nhật số dư/trạng thái
         end
         F->>C: PrepCreate +finalQty
-        F->>S: LabAudit (Success)
+        F->>S: LabAudit (PREP.CREATE + kết thúc Success)
         F-->>A: success=true, mã PC
         A-->>U: Màn in nhãn QR
     end
@@ -122,6 +125,21 @@ sequenceDiagram
 3. Quét: camera app, súng quét hoặc (nếu bật DeepLink) camera điện thoại thường.
 4. Nhãn hỏng/mất: in lại từ `scrDetail`, mã không đổi.
 
+### 5.5 Nhiều người cùng thao tác trên một chai
+
+Con số "còn lại" trên màn hình chỉ là **ảnh chụp lúc tải**, không phải sự thật hiện tại. Ví dụ: A và B cùng mở form và đều thấy chai còn 400 mL; A lưu trước và dùng 300 mL, chai còn 100 mL; màn hình của B vẫn ghi 400. Thiết kế **không dựa vào con số trên màn hình**, mà có bốn lớp:
+
+1. **Flow là trọng tài.** Khi lưu, flow không tin số do app gửi lên: nó **tính lại từ sổ cái** tại đúng lúc đó. Đủ thì trừ, không đủ thì từ chối (BR-02). Số âm không bao giờ xảy ra, dù màn hình cũ đến đâu.
+2. **Từ chối thì trả luôn số mới, không bắt quét lại.** Phản hồi kèm lượng còn lại *hiện tại* của từng dòng có vấn đề; app tự cập nhật dòng đó, tô nổi bật, và gợi ý **chai khác cùng hoá chất còn đủ** (ưu tiên hạn sớm nhất). Người dùng sửa lượng hoặc chọn chai khác rồi lưu lại; dữ liệu đã nhập vẫn còn.
+3. **App tự làm mới trước khi lưu.** Khi vào bước xác nhận và cứ khoảng 45 giây khi form còn mở, app đọc lại số của các thành phần; nếu đã đổi thì hiện "IN-…: 400 → 100 mL" để người dùng biết *trước* khi bấm Lưu, và phải xác nhận lại.
+4. **Tất cả hoặc không gì cả.** Pha nhiều thành phần mà một thành phần không đủ thì cả yêu cầu bị từ chối, không thành phần nào bị trừ. Flow kiểm tra mọi dòng *trước* khi trừ; nếu vẫn bị người khác chen ngang đúng lúc lưu thì các dòng đã trừ được hoàn lại bằng bút toán `Reversal` ([03 §5](03-Power-Automate.md)).
+
+**Mỗi lần lưu có phải quét lại không? Không.** Quét chỉ để *nhận ra đúng chai*; lượng còn lại luôn được đọc từ dữ liệu tại thời điểm cần, nên quét lại không làm con số chính xác hơn. Hai lớp 2 và 3 ở trên mới là thứ giữ cho con số đúng.
+
+**Điều chỉnh tồn (`Adjust`) là trường hợp khác.** Dùng chai thì chỉ cần "đủ hay không" nên hai người cộng trừ độc lập không đè lên nhau. Nhưng điều chỉnh là đặt *con số tuyệt đối* ("kiểm đếm còn 180 mL"): nếu trong lúc Admin đang đếm có người vừa dùng 30 mL, con số 180 đã cũ. Vì vậy payload `Adjust` mang theo `expectedQty` (số dư Admin đã thấy khi mở hộp thoại); số dư lúc lưu khác thì flow từ chối và yêu cầu đếm lại ([03 §7](03-Power-Automate.md)).
+
+**Nếu người dùng đã rót thật rồi mới ghi vào app** và bị từ chối "không đủ": nghĩa là sổ sách đã lệch thực tế (có người ghi thiếu hoặc ước lượng sai trước đó). App **không** cho "ghi vượt tồn" tự do vì sẽ mất kiểm soát; người dùng báo Admin điều chỉnh tồn có lý do và mã lý do, rồi ghi lại. Nếu lab thường ghi *sau* khi rót thì tình huống này sẽ hay gặp — xem gợi ý G11 và câu hỏi 18 ở [05 §7](05-Bao-mat-va-Kiem-thu.md).
+
 ## 6. Quyết định thiết kế chính
 
 | # | Quyết định | Lý do | Đánh đổi |
@@ -137,6 +155,10 @@ sequenceDiagram
 | D9 | Không xoá; sửa bằng bút toán đảo có lý do | Yêu cầu kiểm toán/hồ sơ phòng lab | Dữ liệu tăng dần → có kế hoạch lưu trữ |
 | D10 | Quét bằng máy Zebra cầm tay qua ô nhập văn bản (kiểu bàn phím) + Timer; camera chỉ là phụ | Máy cầm tay không có camera, không gửi hình; control camera của Power Apps không chạy trong trình duyệt | Ô nhập phải luôn giữ focus; máy 1D không đọc được QR → nhãn in thêm Code 39 |
 | D11 | Cảnh báo sắp hết theo % của *lượng tồn chuẩn*; mặc định 20%, mỗi hoá chất có thể đặt riêng | Một con số mặc định dùng ngay được, ai cần thì tinh chỉnh; mốc 100% tự lấy từ tồn cao nhất đã đạt nếu chưa đặt | % so với "tồn chuẩn" chứ không phải so với từng chai — cần Admin đặt tồn chuẩn cho hoá chất quan trọng |
+| D12 | **Nhật ký bắt buộc, ghi trước – làm sau, fail-closed.** Mọi yêu cầu có dòng Started và dòng kết thúc; mỗi đối tượng bị đổi có dòng riêng kèm trước/sau và lý do; danh tính là email dạng văn bản do server xác định ([03 §2.5](03-Power-Automate.md)) | Kiểm toán và truy xuất cần biết ai làm gì, khi nào, vì sao — kể cả thao tác bị từ chối hoặc chết giữa chừng | Thêm vài giây mỗi thao tác; nhật ký không ghi được thì thao tác dừng (cố ý); nhật ký lớn nhanh nên phải lưu trữ định kỳ |
+| D13 | Danh mục, vị trí, cấu hình, vai trò chỉ đổi qua `LAB-F05`; Admin chỉ có quyền đọc | Không còn đường ghi vòng qua nhật ký; cấp quyền Admin là việc nhạy cảm nhất của hệ thống | Admin sửa chậm hơn (qua flow) và phải nhập lý do |
+| D14 | `LabRequests` (duy nhất theo `RequestId`) là sổ nhận yêu cầu, thay cho việc kiểm tra "đã có `Success` trong audit" | Chặn chạy trùng kể cả khi gọi song song hoặc flow chết giữa chừng; cách cũ có khe hở cả hai trường hợp | Thêm một list; bị từ chối thì app phải sinh `RequestId` mới ([04 §4.4](04-Power-Apps.md)) |
+| D15 | Số hiển thị chỉ là ảnh chụp; flow **tính lại từ sổ cái khi lưu** và trả số mới khi từ chối; app làm mới trước khi lưu; chưa dùng khoá hay giữ chỗ (mục 5.5) | Phòng lab ít người dùng đồng thời, form hay bị bỏ mở nên khoá bi quan gây kẹt; flow vốn đã chặn số âm | Người lưu sau có thể bị từ chối và phải sửa lại (đã giảm bằng làm mới tự động và gợi ý chai khác); nếu lab ghi *trước* khi rót thì nên xét G11 |
 
 ## 7. Lộ trình triển khai
 
@@ -144,17 +166,17 @@ sequenceDiagram
 |---|---|---|
 | 0 | Chốt câu hỏi mở ([05 §7](05-Bao-mat-va-Kiem-thu.md)), xin môi trường, tài khoản dịch vụ, nhóm bảo mật | Quyết định bằng văn bản |
 | 1 | Chạy `New-LabChemLists.ps1 -SeedData -AdminEmail …`; nạp danh mục, vị trí, vai trò | Lists đúng schema; `-ApplyPermissions` kiểm bằng tài khoản thường |
-| 2 | Dựng `LAB-C01`, `LAB-F01` | T-IN-*, T-RM-01 |
+| 2 | Dựng `LAB-C02` (nhật ký) và list `LabRequests` **trước hoặc cùng lúc** với `LAB-C01`, `LAB-F01` | T-IN-*, T-RM-01, T-AU-01…07 |
 | 3 | App: khung điều hướng, `scrHome`, `scrScan`, `scrInventory`, `scrDetail`, `scrLotRegister`, `scrLabel` | T-SC-*, T-IN-* trên thiết bị thật |
 | 4 | `LAB-F02`, `LAB-F03`, `scrPrepRegister`, `scrUsage`, `scrTrace` | T-PR-*, T-US-*, T-TR-* |
-| 5 | `LAB-F04`, `LAB-S01`, `LAB-S02`, `scrAdmin` | T-RM-02…06, T-SEC-06 |
-| 6 | Rà soát bảo mật go-live, UAT, chạy thử 2 tuần với dữ liệu thật | Nghiệm thu theo [05 §6.3](05-Bao-mat-va-Kiem-thu.md) |
+| 5 | `LAB-F04`, `LAB-F05`, `LAB-F06`, `LAB-S01`, `LAB-S02`, `LAB-S03`, `scrAdmin`, `scrAudit` | T-RM-02…06, T-SEC-06, T-AU-08…18 |
+| 6 | Rà soát bảo mật go-live, chạy T-AU-11…13 trên tenant thật, UAT, chạy thử 2 tuần với dữ liệu thật, rà soát nhật ký lần đầu | Nghiệm thu theo [05 §6.3](05-Bao-mat-va-Kiem-thu.md) |
 
-Thứ tự này đưa người dùng vào dùng được sớm nhất ở giai đoạn 3 (nhập, quét, xem tồn) rồi mới thêm pha chế và truy xuất.
+Thứ tự này đưa người dùng vào dùng được sớm nhất ở giai đoạn 3 (nhập, quét, xem tồn) rồi mới thêm pha chế và truy xuất. **Nhật ký không để cuối**: dựng sau thì phải sửa lại mọi flow đã làm.
 
 ## 8. Gợi ý mở rộng (đề xuất — chưa đưa vào schema, flow và app)
 
-> Các mục dưới đây là **đề xuất để anh chọn**. Chưa mục nào nằm trong [02](02-Mo-hinh-du-lieu.md), [03](03-Power-Automate.md), [04](04-Power-Apps.md) hay trong bộ 65 ca kiểm thử. Anh chọn mục nào thì em cập nhật cột, flow, màn hình và ca kiểm thử theo mục đó (dự kiến mỗi mục thêm khoảng 3–5 ca kiểm thử). Công sức ước lượng theo thang **Nhỏ** (chủ yếu giao diện) · **Vừa** (vài cột và một flow hoặc một màn hình mới) · **Lớn** (nhiều list, flow và màn hình).
+> Các mục dưới đây là **đề xuất để anh chọn**. Chưa mục nào nằm trong [02](02-Mo-hinh-du-lieu.md), [03](03-Power-Automate.md), [04](04-Power-Apps.md) hay trong bộ ca kiểm thử. **Mỗi mục được chọn phải theo khối chuẩn ghi nhật ký** ([03 §2.2, §2.5](03-Power-Automate.md)): thêm mã sự kiện vào danh mục ở 03 §2.6 (ví dụ `LOT.MOVE`, `LOT.OPEN`, `STOCKTAKE.CLOSE`) và ca kiểm thử nhật ký tương ứng. Anh chọn mục nào thì em cập nhật cột, flow, màn hình và ca kiểm thử theo mục đó (dự kiến mỗi mục thêm khoảng 3–5 ca kiểm thử). Công sức ước lượng theo thang **Nhỏ** (chủ yếu giao diện) · **Vừa** (vài cột và một flow hoặc một màn hình mới) · **Lớn** (nhiều list, flow và màn hình).
 
 ### 8.1 Nên đưa vào giai đoạn 1
 
@@ -185,7 +207,7 @@ Ba mục đầu (G1–G3) là **chỗ thiếu của thiết kế hiện tại**,
 
 **G3 — Nạp tồn đầu kỳ từ Excel**
 - **Dữ liệu:** tệp Excel mẫu (dạng Table) gồm: hoá chất (khớp danh mục), số lô, hạn dùng, lượng ban đầu, lượng hiện còn, vị trí, ngày nhận (tuỳ chọn).
-- **Flow:** `LAB-F05 ImportOpeningStock`, **chỉ Admin**, hai bước. *Kiểm tra*: đọc bảng Excel trong thư viện `LabImport`, kiểm từng dòng (khớp danh mục, đơn vị, hạn dùng, `còn ≤ ban đầu`) và trả danh sách lỗi kèm số dòng. *Nhập*: chỉ chạy khi không còn lỗi; tạo chai và ghi sổ cái `Receive` +ban đầu rồi `Adjust` −(ban đầu − hiện còn) với lý do "Tồn đầu kỳ", để tổng sổ cái đúng bằng lượng hiện còn. Trả tệp kết quả có mã từng chai để in nhãn hàng loạt. `RequestId` theo tệp + số dòng nên chạy lại không tạo trùng.
+- **Flow:** `LAB-F07 ImportOpeningStock`, **chỉ Admin**, hai bước. *Kiểm tra*: đọc bảng Excel trong thư viện `LabImport`, kiểm từng dòng (khớp danh mục, đơn vị, hạn dùng, `còn ≤ ban đầu`) và trả danh sách lỗi kèm số dòng. *Nhập*: chỉ chạy khi không còn lỗi; tạo chai và ghi sổ cái `Receive` +ban đầu rồi `Adjust` −(ban đầu − hiện còn) với lý do "Tồn đầu kỳ", để tổng sổ cái đúng bằng lượng hiện còn. Trả tệp kết quả có mã từng chai để in nhãn hàng loạt. `RequestId` theo tệp + số dòng nên chạy lại không tạo trùng.
 - **Triển khai:** thí điểm **một tủ** trước; dán nhãn xong, quét xác nhận từng chai (dùng chức năng kiểm kê G6 nếu đã làm); rồi mở rộng.
 - **Kiểm thử:** dòng sai được báo kèm số dòng và lý do; không nhập khi còn lỗi; chạy lại cùng tệp không tạo trùng.
 
@@ -199,7 +221,7 @@ Ba mục đầu (G1–G3) là **chỗ thiếu của thiết kế hiện tại**,
 
 **G6 — Kiểm kê bằng máy quét**
 - **Dữ liệu:** `LabStocktake` (phiên kiểm kê: mã `KK-yy-nnnnn`, vị trí, trạng thái Open/Closed, người mở/đóng) và `LabStocktakeLines` (phiên, chai/dung dịch, lượng dự kiến, lượng đếm, chênh lệch, ghi chú).
-- **Flow:** `LAB-F06 Stocktake` ba bước. *Start*: chọn vị trí, chụp danh sách dự kiến từ sổ cái. *Scan*: ghi từng dòng; chai quét được nhưng đang ghi ở vị trí khác thì đề nghị `Move` (G1). *Close*: liệt kê chai không tìm thấy; chênh lệch số lượng chuyển Admin duyệt, duyệt xong mới ghi `Adjust` qua `LAB-C01` với lý do "Kiểm kê KK-…". **Không tự huỷ** chai không tìm thấy.
+- **Flow:** `LAB-F08 Stocktake` ba bước. *Start*: chọn vị trí, chụp danh sách dự kiến từ sổ cái. *Scan*: ghi từng dòng; chai quét được nhưng đang ghi ở vị trí khác thì đề nghị `Move` (G1). *Close*: liệt kê chai không tìm thấy; chênh lệch số lượng chuyển Admin duyệt, duyệt xong mới ghi `Adjust` qua `LAB-C01` với lý do "Kiểm kê KK-…". **Không tự huỷ** chai không tìm thấy.
 - **App:** `scrStocktake`: chọn vị trí rồi quét liên tục bằng máy Zebra; bộ đếm "đã quét x / dự kiến y" và danh sách còn thiếu; chai còn nguyên bấm "Không đổi", chai đã dùng một phần nhập lượng ước tính.
 - **Kiểm thử:** chai thiếu được liệt kê, không bị tự huỷ; chênh lệch cần Admin duyệt mới đổi tồn; bất biến sổ cái giữ nguyên.
 
@@ -208,9 +230,10 @@ Ba mục đầu (G1–G3) là **chỗ thiếu của thiết kế hiện tại**,
 | # | Gợi ý | Thay đổi dự kiến | Công sức |
 |---|---|---|---|
 | G7 | **Công thức mẫu khi pha** (ví dụ "NaOH 0,1 N") | `LabRecipes` (tên, SOP, lượng chuẩn, số ngày hạn dùng của dung dịch) và `LabRecipeItems` (hoá chất theo danh mục, lượng trên đơn vị chuẩn, vai trò). Khi pha: chọn công thức và thể tích, app điền sẵn các dòng thành phần theo tỷ lệ; người dùng quét chai thật vào từng dòng và app kiểm chai thuộc đúng hoá chất của dòng. Hạn dùng gợi ý = ngày pha + số ngày của công thức, vẫn bị giới hạn bởi BR-05. | Vừa–Lớn |
-| G8 | **Nút "Tạo đề nghị mua"** từ cảnh báo sắp hết | `LabPurchaseRequests` (hoá chất, lượng gợi ý = tồn chuẩn − tổng tồn, trạng thái Nháp/Đã gửi/Đã đặt/Đã nhận, người đề nghị). Flow `LAB-F07` tạo bản ghi và gửi email (hoặc Approvals) cho người mua; khi `LAB-F01` nhập đúng hoá chất đó thì tự đổi sang "Đã nhận". Khép vòng "chuẩn bị mua thêm". | Vừa |
-| G9 | **Xuất hồ sơ truy xuất ra PDF** (đưa lên sớm hơn giai đoạn 2) | Flow `LAB-F08` nhận mã `PC-…` hoặc `IN-…`, dựng trang HTML (thông tin, cây nguồn gốc, danh sách biên bản), đổi sang PDF bằng connector OneDrive/SharePoint (**cần xác nhận connector và giấy phép**), lưu vào thư viện `LabReports` và trả link. Đánh giá viên (ví dụ ISO/IEC 17025) thường muốn xem hồ sơ này. | Vừa |
+| G8 | **Nút "Tạo đề nghị mua"** từ cảnh báo sắp hết | `LabPurchaseRequests` (hoá chất, lượng gợi ý = tồn chuẩn − tổng tồn, trạng thái Nháp/Đã gửi/Đã đặt/Đã nhận, người đề nghị). Flow `LAB-F09` tạo bản ghi và gửi email (hoặc Approvals) cho người mua; khi `LAB-F01` nhập đúng hoá chất đó thì tự đổi sang "Đã nhận". Khép vòng "chuẩn bị mua thêm". | Vừa |
+| G9 | **Xuất hồ sơ truy xuất ra PDF** (đưa lên sớm hơn giai đoạn 2) | Flow `LAB-F10` nhận mã `PC-…` hoặc `IN-…`, dựng trang HTML (thông tin, cây nguồn gốc, danh sách biên bản), đổi sang PDF bằng connector OneDrive/SharePoint (**cần xác nhận connector và giấy phép**), lưu vào thư viện `LabReports` và trả link. Đánh giá viên (ví dụ ISO/IEC 17025) thường muốn xem hồ sơ này. | Vừa |
 | G10 | **Chia chai** (rót dung môi sang chai nhỏ) | Dùng lại luồng pha chế với `PrepType = Chia chai`, một thành phần, lượng sau pha = lượng đã rót; hạn dùng tối đa bằng hạn hiệu lực của chai gốc; có lối tắt "Chia chai" điền sẵn. Mỗi chai nhỏ có nhãn riêng. | Nhỏ |
+| G11 | **Giữ chỗ lượng khi đang nhập** | `LabHolds` (chai/dung dịch, lượng, người giữ, hết hạn sau 10–15 phút). Màn nhập hiện "còn 400, đang được giữ 150 bởi B → có thể dùng 250"; giải phóng khi lưu, huỷ hoặc hết hạn. **Chỉ có ý nghĩa nếu lab ghi vào app *trước* khi rót**; nếu ghi *sau* khi rót thì giữ chỗ vô nghĩa (việc đã xảy ra). Có thêm việc: flow tạo/xoá giữ chỗ, dọn giữ chỗ bỏ quên, xử lý khi người giữ chỗ nghỉ giữa chừng. Em chưa khuyên làm ở giai đoạn đầu. | Vừa |
 
 ### 8.4 Để sau, tuỳ nhu cầu
 
@@ -221,7 +244,7 @@ Ba mục đầu (G1–G3) là **chỗ thiếu của thiết kế hiện tại**,
 
 ### 8.5 Khuyến nghị phạm vi
 
-Chọn **G1–G6** cho giai đoạn 1 thay vì làm hết: mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên **một tủ thí điểm** có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G10 làm sau khi thí điểm ổn.
+Chọn **G1–G6** cho giai đoạn 1 thay vì làm hết: mỗi tính năng thêm là thêm việc kiểm thử, và app chạy tốt trên **một tủ thí điểm** có giá trị hơn app đầy đủ nhưng chưa ai dùng. G7–G11 làm sau khi thí điểm ổn (riêng G11 chỉ cần nếu lab ghi *trước* khi rót).
 
 Hai điều cần anh quyết (cũng nằm trong [05 §7](05-Bao-mat-va-Kiem-thu.md)):
 1. Hoá chất nào ở lab có hạn dùng ngắn hơn sau khi mở nắp, và có cần quản lý riêng không (G2)?

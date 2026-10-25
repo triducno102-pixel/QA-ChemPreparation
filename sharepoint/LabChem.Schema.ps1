@@ -39,7 +39,7 @@ $StorageChoice = @('15-25 °C (phòng)', '2-8 °C', '-20 °C', '-80 °C', 'Tủ 
 $LabSchema = [ordered]@{
 
     LabCatalog = @{
-        Description  = 'Danh mục hoá chất (master data). Chỉ Admin chỉnh sửa.'
+        Description  = 'Danh mục hoá chất (master data). Chỉ Admin chỉnh sửa, và chỉ qua flow LAB-F05 (có nhật ký trước/sau).'
         TitleDisplay = 'Tên hoá chất'
         TitleIndexed = $true
         TitleUnique  = $false
@@ -60,7 +60,7 @@ $LabSchema = [ordered]@{
     }
 
     LabLocations = @{
-        Description  = 'Vị trí lưu trữ (phòng / tủ / ngăn).'
+        Description  = 'Vị trí lưu trữ (phòng / tủ / ngăn). Chỉ đổi qua flow LAB-F05.'
         TitleDisplay = 'Tên vị trí'
         TitleIndexed = $true
         TitleUnique  = $true
@@ -100,6 +100,7 @@ $LabSchema = [ordered]@{
             Fld Note          'Ghi chú'         Note
             Fld IsVoid        'Đã vô hiệu'      Boolean -Default '0'
             Fld VoidReason    'Lý do vô hiệu'   Note
+            Fld RequestId     'Request Id'      Text   -Indexed -Note 'Yêu cầu đã tạo bản ghi này: dựng lại dấu vết của một yêu cầu và phát hiện bản ghi dở dang.'
         )
     }
 
@@ -131,6 +132,7 @@ $LabSchema = [ordered]@{
             Fld Note            'Ghi chú'             Note
             Fld IsVoid          'Đã vô hiệu'          Boolean -Default '0'
             Fld VoidReason      'Lý do vô hiệu'       Note
+            Fld RequestId       'Request Id'          Text    -Indexed -Note 'Yêu cầu đã tạo bản ghi này.'
         )
     }
 
@@ -139,6 +141,7 @@ $LabSchema = [ordered]@{
         TitleDisplay = 'Mã hoá chất pha'
         TitleIndexed = $true
         TitleUnique  = $false
+        IndexSystemDates = $true
         ViewFields   = @('LinkTitle', 'SourceType', 'SourceCode', 'SourceName', 'QtyUsed', 'Unit', 'ItemRole')
         Fields       = @(
             Fld PrepID       'ID dung dịch pha' Number -Decimals 0 -Indexed -Required
@@ -150,26 +153,31 @@ $LabSchema = [ordered]@{
             Fld ItemRole     'Vai trò'          Choice -Choices 'Chất tan', 'Dung môi', 'Phụ gia' -Default 'Chất tan'
             Fld QtyUsed      'Lượng dùng'       Number -Decimals 4 -Min 0 -Required
             Fld Unit         'Đơn vị'           Choice -Choices $UnitChoices -Required
+            Fld RequestId    'Request Id'       Text   -Indexed -Note 'Yêu cầu đã tạo bản ghi này.'
         )
     }
 
     LabLedger = @{
-        Description  = 'Sổ cái xuất/nhập (append-only). Số dư của Lot/Prep = tổng QtyDelta. Nguồn sự thật cho lượng còn lại.'
+        Description  = 'Sổ cái xuất/nhập (append-only: tài khoản flow chỉ có quyền Add, không Edit/Delete). Số dư của Lot/Prep = tổng QtyDelta. Nguồn sự thật cho lượng còn lại.'
         TitleDisplay = 'Mã đối tượng'
         TitleIndexed = $true
         TitleUnique  = $false
-        ViewFields   = @('Created', 'LinkTitle', 'ItemType', 'TxnType', 'QtyDelta', 'Unit', 'BalanceAfter', 'RefCode', 'Actor')
+        IndexSystemDates = $true
+        ViewFields   = @('Created', 'LinkTitle', 'ItemType', 'TxnType', 'QtyDelta', 'Unit', 'BalanceAfter', 'RefCode', 'ActorEmail')
         Fields       = @(
             Fld ItemType     'Loại đối tượng' Choice -Choices 'Lot', 'Prep' -Required
             Fld ItemID       'ID đối tượng'   Number -Decimals 0 -Indexed -Required
             Fld TxnType      'Loại giao dịch' Choice -Choices 'Receive', 'PrepCreate', 'PrepUse', 'TestUse', 'Adjust', 'Dispose', 'Reversal' -Required
             Fld QtyDelta     'Biến động'      Number -Decimals 4 -Required -Note 'Dương = nhập, âm = xuất.'
             Fld Unit         'Đơn vị'         Choice -Choices $UnitChoices -Required
-            Fld BalanceAfter 'Số dư sau GD'   Number -Decimals 4
+            Fld BalanceAfter 'Số dư sau GD'   Number -Decimals 4 -Note 'Số dư tính tại thời điểm ghi, chỉ để tham khảo (có thể lệch nếu hai giao dịch chen nhau). Không bao giờ sửa sau khi ghi; nguồn sự thật là Σ QtyDelta.'
             Fld RefType      'Loại tham chiếu' Choice -Choices 'Prep', 'Report', 'Manual'
             Fld RefCode      'Mã tham chiếu'  Text   -Indexed -Note 'Mã dung dịch pha hoặc số biên bản liên quan.'
             Fld Reason       'Lý do'          Note   -Note 'Bắt buộc với Adjust / Dispose / Reversal.'
-            Fld Actor        'Người thực hiện' User
+            Fld ReasonCode   'Mã lý do'       Choice -Choices 'EntryError', 'CountCorrection', 'Expired', 'Spilled', 'Contaminated', 'Waste', 'Other' -Note 'Phân loại lý do để thống kê hao hụt. Bắt buộc với Adjust / Dispose.'
+            Fld Actor        'Người thực hiện' User   -Note 'Chỉ để hiển thị tên. Danh tính chính thức là ActorEmail.'
+            Fld ActorEmail   'Email người thực hiện' Text -Indexed -Required -Note 'Danh tính lấy từ phía server lúc ghi; văn bản bất biến (không đổi khi người dùng đổi tên hoặc bị xoá).'
+            Fld RequestId    'Request Id'     Text   -Indexed -Note 'Yêu cầu đã tạo dòng này; nối với LabAudit.'
         )
     }
 
@@ -178,6 +186,7 @@ $LabSchema = [ordered]@{
         TitleDisplay = 'Số biên bản'
         TitleIndexed = $true
         TitleUnique  = $false
+        IndexSystemDates = $true
         ViewFields   = @('LinkTitle', 'TestName', 'ItemCode', 'ItemName', 'QtyUsed', 'Unit', 'UsedDate', 'Analyst')
         Fields       = @(
             Fld ReportUrl  'Link biên bản'   Url
@@ -192,28 +201,40 @@ $LabSchema = [ordered]@{
             Fld UsedDate   'Ngày sử dụng'    DateTime -Indexed -Required
             Fld Analyst    'Người thử nghiệm' User
             Fld Note       'Ghi chú'         Note
+            Fld RequestId  'Request Id'      Text   -Indexed -Note 'Yêu cầu đã tạo dòng này.'
         )
     }
 
     LabAudit = @{
-        Description  = 'Nhật ký kiểm toán nghiệp vụ (append-only). Lưu thành công lẫn bị từ chối. Admin/Reviewer đọc.'
+        Description  = 'Nhật ký kiểm toán (append-only): mọi yêu cầu — thành công, bị từ chối, lỗi, kể cả của người không có quyền — đều để lại dấu vết. Tài khoản flow chỉ có quyền Add. Admin/Reviewer đọc.'
         TitleDisplay = 'Hành động'
         TitleIndexed = $true
         TitleUnique  = $false
-        ViewFields   = @('Created', 'LinkTitle', 'EntityType', 'EntityCode', 'Result', 'Actor')
+        IndexSystemDates = $true
+        ViewFields   = @('Created', 'LinkTitle', 'EntityCode', 'Result', 'Severity', 'ActorEmail', 'Reason')
         Fields       = @(
-            Fld EntityType 'Loại đối tượng' Choice -Choices 'Lot', 'Prep', 'Catalog', 'Report', 'System' -Required
-            Fld EntityCode 'Mã đối tượng'   Text   -Indexed
-            Fld Result     'Kết quả'        Choice -Choices 'Success', 'Rejected', 'Error' -Required
-            Fld Detail     'Chi tiết'       Note   -Note 'JSON kết quả / lý do từ chối. Dùng để trả lại kết quả khi client gửi lại cùng RequestId.'
-            Fld Actor      'Người thực hiện' User
-            Fld RequestId  'Request Id'     Text   -Indexed -Note 'GUID do app sinh; chống ghi trùng khi bấm 2 lần / flow retry.'
-            Fld RunId      'Flow run Id'    Text
+            Fld EntityType  'Loại đối tượng'   Choice -Choices 'Lot', 'Prep', 'Catalog', 'Location', 'Role', 'Setting', 'Report', 'Request', 'System' -Required
+            Fld EntityID    'ID đối tượng'     Number -Decimals 0
+            Fld EntityCode  'Mã đối tượng'     Text   -Indexed
+            Fld Result      'Kết quả'          Choice -Choices 'Started', 'Success', 'Rejected', 'Error', 'Warning' -Required -Note 'Started = đã nhận yêu cầu, chưa biết kết quả. Mọi yêu cầu có một dòng Started rồi một dòng kết thúc.'
+            Fld Severity    'Mức'              Choice -Choices 'Info', 'Important', 'Critical' -Default 'Info' -Required -Note 'Critical = điều chỉnh tồn, huỷ, vô hiệu, đổi cấu hình/vai trò, cảnh báo toàn vẹn: gửi email ngay và liệt kê trong báo cáo hằng ngày.'
+            Fld Reason      'Lý do'            Note   -Note 'Lý do do người dùng nhập (bắt buộc với các hành động Critical).'
+            Fld BeforeValue 'Giá trị trước'    Note   -Note 'JSON các trường bị đổi, trước khi đổi.'
+            Fld AfterValue  'Giá trị sau'      Note   -Note 'JSON các trường bị đổi, sau khi đổi.'
+            Fld Detail      'Chi tiết'         Note   -Note 'JSON: payload (khi Started), kết quả hoặc lý do từ chối/lỗi kỹ thuật (khi kết thúc).'
+            Fld ActorEmail  'Email người thực hiện' Text -Indexed -Required -Note 'Lấy từ phía server, không nhận từ client. Văn bản bất biến, không phải tham chiếu người dùng nên không đổi khi đổi tên và luôn ghi được kể cả với tài khoản lạ.'
+            Fld ActorName   'Họ tên lúc đó'    Text
+            Fld ActorRole   'Vai trò lúc đó'   Text   -Note 'Vai trò trong LabRoles tại thời điểm ghi, hoặc None.'
+            Fld Source      'Nguồn'            Choice -Choices 'App', 'ClientReport', 'Scheduled', 'Script' -Required -Note 'App = flow do app gọi; ClientReport = sự kiện do app tự báo (độ tin cậy thấp hơn); Scheduled = flow định kỳ; Script = chạy tay.'
+            Fld FlowName    'Flow'             Text
+            Fld RunId       'Flow run Id'      Text
+            Fld RequestId   'Request Id'       Text   -Indexed -Note 'GUID do app sinh cho một ý định thao tác. Nối nhật ký với sổ cái và mọi bản ghi do yêu cầu đó tạo.'
+            Fld ClientInfo  'Phiên bản app / thiết bị' Text -Note 'App tự khai (không tin tuyệt đối), dùng để điều tra.'
         )
     }
 
     LabRoles = @{
-        Description  = 'Phân quyền nghiệp vụ. Flow kiểm tra vai trò ở phía server; app chỉ dùng để ẩn/hiện chức năng.'
+        Description  = 'Phân quyền nghiệp vụ. Flow kiểm tra vai trò ở phía server; app chỉ dùng để ẩn/hiện chức năng. Chỉ đổi qua flow LAB-F05.'
         TitleDisplay = 'Email (UPN, chữ thường)'
         TitleIndexed = $true
         TitleUnique  = $true
@@ -226,7 +247,7 @@ $LabSchema = [ordered]@{
     }
 
     LabSettings = @{
-        Description  = 'Cấu hình dạng khoá-giá trị. Chỉ Admin chỉnh sửa.'
+        Description  = 'Cấu hình dạng khoá-giá trị. Chỉ Admin chỉnh sửa, và chỉ qua flow LAB-F05.'
         TitleDisplay = 'Khoá'
         TitleIndexed = $true
         TitleUnique  = $true
@@ -234,6 +255,22 @@ $LabSchema = [ordered]@{
         Fields       = @(
             Fld Value       'Giá trị' Text
             Fld Description 'Mô tả'   Note
+        )
+    }
+
+    LabRequests = @{
+        Description  = 'Sổ nhận yêu cầu: mỗi RequestId đúng một dòng (duy nhất). Flow nhận yêu cầu vào đây trước khi làm gì để chặn chạy trùng. Chỉ flow ghi; người dùng không truy cập. Không phải bằng chứng kiểm toán (bằng chứng là LabAudit).'
+        TitleDisplay = 'RequestId'
+        TitleIndexed = $true
+        TitleUnique  = $true
+        IndexSystemDates = $true
+        ViewFields   = @('Created', 'LinkTitle', 'FlowName', 'ActorEmail', 'State')
+        Fields       = @(
+            Fld FlowName   'Flow'              Text
+            Fld ActorEmail 'Người gọi (email)' Text   -Indexed
+            Fld State      'Trạng thái'        Choice -Choices 'InProgress', 'Done', 'Rejected', 'Error' -Default 'InProgress' -Indexed -Required
+            Fld ResultJson 'Kết quả đã trả'    Note   -Note 'JSON success/message/codes/state đã trả cho app; trả lại nguyên văn khi nhận lại cùng RequestId.'
+            Fld RunId      'Flow run Id'       Text
         )
     }
 }
@@ -250,5 +287,8 @@ $LabSeedSettings = @(
     @{ Key = 'ReportUrlAllowedHosts';   Value = '';                  Desc = 'Hậu tố host được phép cho link biên bản/COA, phân tách bằng dấu chấm phẩy (vd .sharepoint.com). Trống = mọi https.' }
     @{ Key = 'QRMode';                  Value = 'CodeOnly';          Desc = 'CodeOnly: QR chứa mã nội bộ. DeepLink: QR chứa link mở thẳng app (cần AppLink).' }
     @{ Key = 'QRBaseUrl';               Value = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data='; Desc = 'PILOT ONLY. Dịch vụ tạo ảnh QR công cộng, chỉ nhận mã nội bộ. Thay bằng PCF/dịch vụ nội bộ trước khi go-live (xem docs/05).' }
+    @{ Key = 'AlertOnCritical';         Value = 'true';              Desc = 'true: gửi email ngay tới AlertEmails khi có sự kiện mức Critical (điều chỉnh tồn, huỷ, vô hiệu, đổi cấu hình/vai trò, cảnh báo toàn vẹn).' }
+    @{ Key = 'RequestStaleMinutes';     Value = '15';                Desc = 'Yêu cầu ở trạng thái InProgress quá số phút này được coi là bị gián đoạn (LAB-S03 xử lý, không tự chạy lại).' }
+    @{ Key = 'LogTraceViews';           Value = 'false';             Desc = 'true: ghi nhật ký cả lượt mở màn Truy xuất (sự kiện do app báo). Mặc định tắt để nhật ký không loãng.' }
     @{ Key = 'AppLink';                 Value = '';                  Desc = 'Link play của app, ví dụ https://apps.powerapps.com/play/<appId>?tenantId=<tid>. Dùng khi QRMode=DeepLink.' }
 )
